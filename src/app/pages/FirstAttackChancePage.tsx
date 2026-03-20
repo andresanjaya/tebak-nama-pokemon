@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion } from 'motion/react';
-import { Zap, Target } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Pokemon } from '../types/pokemon';
+import { PokedexHeader } from '../components/PokedexHeader';
 
 interface CapturedPokemon extends Pokemon {
   rarity: number;
@@ -18,13 +19,8 @@ export function FirstAttackChancePage() {
   const [enemy, setEnemy] = useState<Pokemon | null>(null);
   const [mode, setMode] = useState<string>('normal');
 
-  const [meterValue, setMeterValue] = useState(0);
-  const [meterDirection, setMeterDirection] = useState<'up' | 'down'>('up');
-  const [attemptMade, setAttemptMade] = useState(false);
-  const [result, setResult] = useState<'success' | 'fail' | null>(null);
-
-  const successZoneStart = 35;
-  const successZoneEnd = 65;
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [flipResult, setFlipResult] = useState<'heads' | 'tails' | null>(null);
 
   // Initialize state from location or sessionStorage
   useEffect(() => {
@@ -66,54 +62,32 @@ export function FirstAttackChancePage() {
     setMode(modeData || 'normal');
   }, [location, navigate]);
 
-  // Meter animation
-  useEffect(() => {
-    if (!attemptMade && team && enemy) {
-      const interval = setInterval(() => {
-        setMeterValue(prev => {
-          if (meterDirection === 'up') {
-            if (prev >= 100) {
-              setMeterDirection('down');
-              return 100;
-            }
-            return prev + 3;
-          } else {
-            if (prev <= 0) {
-              setMeterDirection('up');
-              return 0;
-            }
-            return prev - 3;
-          }
-        });
-      }, 20);
-
-      return () => clearInterval(interval);
-    }
-  }, [attemptMade, meterDirection, team, enemy]);
-
   if (!team || !enemy) {
     return null;
   }
 
-  const handleAttempt = () => {
-    if (attemptMade) return;
+  const handleFlipCoin = () => {
+    if (isFlipping || flipResult) return;
 
-    setAttemptMade(true);
+    setIsFlipping(true);
 
-    // Check if in success zone
-    const inSuccessZone = meterValue >= successZoneStart && meterValue <= successZoneEnd;
-    setResult(inSuccessZone ? 'success' : 'fail');
+    const result: 'heads' | 'tails' = Math.random() < 0.5 ? 'heads' : 'tails';
 
-    console.log('First attack attempt result:', inSuccessZone ? 'SUCCESS' : 'FAIL');
+    setTimeout(() => {
+      setFlipResult(result);
+      setIsFlipping(false);
+    }, 1300);
 
     // Proceed to battle after showing result
     setTimeout(() => {
+      const firstAttackBonus = result === 'heads';
+
       // Save to sessionStorage before navigating
       if (team && enemy) {
         sessionStorage.setItem('battleTeam', JSON.stringify(team));
         sessionStorage.setItem('battleEnemy', JSON.stringify(enemy));
         sessionStorage.setItem('battleMode', mode || 'normal');
-        sessionStorage.setItem('firstAttackBonus', JSON.stringify(inSuccessZone));
+        sessionStorage.setItem('firstAttackBonus', JSON.stringify(firstAttackBonus));
       }
 
       navigate('/game/battle/fight', {
@@ -121,137 +95,63 @@ export function FirstAttackChancePage() {
           team,
           enemy,
           mode,
-          firstAttackBonus: inSuccessZone,
+          firstAttackBonus,
         }
       });
-    }, 2000);
+    }, 3200);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-500 via-red-500 to-purple-600 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
-        >
-          {/* Title */}
-          <motion.div
-            animate={{ 
-              scale: [1, 1.1, 1],
-              rotate: [0, -2, 2, 0],
-            }}
-            transition={{ repeat: Infinity, duration: 1.5 }}
-            className="mb-8"
+    <div className="min-h-screen pb-20 bg-[linear-gradient(180deg,#73dee3_0%,#b9e4db_35%,#b3e073_58%,#68d7bb_74%,#48ae4e_100%)]">
+      <PokedexHeader
+        leftButton={
+          <button
+            onClick={() => navigate('/game/battle/encounter')}
+            className="w-14 h-14 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
           >
-            <h1 
-              className="text-6xl font-black text-white mb-2"
-              style={{ 
-                textShadow: '0 0 20px rgba(255,255,255,0.5), 0 4px 0 rgba(0,0,0,0.3)',
-                WebkitTextStroke: '2px rgba(0,0,0,0.2)',
-              }}
-            >
-              FIRST ATTACK
-            </h1>
-            <h2 
-              className="text-7xl font-black text-yellow-300"
-              style={{ 
-                textShadow: '0 0 30px rgba(253,224,71,0.8), 0 4px 0 rgba(0,0,0,0.3)',
-                WebkitTextStroke: '3px rgba(0,0,0,0.2)',
-              }}
-            >
-              CHANCE!
-            </h2>
-          </motion.div>
+            <ArrowLeft className="w-6 h-6 text-gray-800" />
+          </button>
+        }
+      />
 
-          {/* Timing Meter */}
-          {!attemptMade && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 shadow-2xl mb-6"
-            >
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <Target className="w-6 h-6 text-purple-600" />
-                <h3 className="text-xl font-black text-gray-900">
-                  TAP WHEN GREEN!
-                </h3>
-              </div>
+      <div className="w-full px-4 pt-4">
+        <div className="w-full max-w-md space-y-3">
+          <div className="relative rounded-2xl border-4 border-[#23233f] bg-[#9fd2d6] overflow-hidden shadow-xl p-6">
+            <div className="absolute inset-x-0 bottom-0 h-[42%] bg-[#78c35f]" />
 
-              {/* Meter Container */}
-              <div className="relative h-16 bg-gray-300 rounded-2xl overflow-hidden mb-6 border-4 border-gray-400">
-                {/* Success Zone */}
-                <div 
-                  className="absolute h-full bg-gradient-to-r from-green-400 via-green-500 to-green-400 opacity-80"
-                  style={{ 
-                    left: `${successZoneStart}%`,
-                    width: `${successZoneEnd - successZoneStart}%`,
-                  }}
-                >
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-white font-black text-sm">PERFECT!</span>
-                  </div>
-                </div>
-                
-                {/* Moving Indicator */}
-                <motion.div
-                  className="absolute top-0 bottom-0 w-3 bg-gradient-to-b from-purple-600 via-pink-600 to-red-600 shadow-lg"
-                  style={{ left: `${meterValue}%` }}
-                  animate={{ boxShadow: ['0 0 10px rgba(139,92,246,0.5)', '0 0 20px rgba(139,92,246,1)', '0 0 10px rgba(139,92,246,0.5)'] }}
-                  transition={{ repeat: Infinity, duration: 0.5 }}
-                />
-              </div>
+            <div className="relative text-center mb-4 z-10">
+              <h1 className="text-3xl font-black text-[#1f1e2d]">COIN FLIP</h1>
+              <p className="text-[#1f1e2d] font-semibold">Heads: going first • Tails: going second</p>
+            </div>
 
-              <motion.button
-                onClick={handleAttempt}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white font-black py-6 rounded-2xl shadow-2xl text-2xl"
-                style={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
-              >
-                <div className="flex items-center justify-center gap-3">
-                  <Zap className="w-8 h-8" />
-                  <span>TAP NOW!</span>
-                </div>
-              </motion.button>
-            </motion.div>
-          )}
-
-          {/* Result Display */}
-          {attemptMade && result && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 200 }}
-              className={`rounded-3xl p-12 shadow-2xl ${
-                result === 'success'
-                  ? 'bg-gradient-to-br from-green-400 to-emerald-500'
-                  : 'bg-gradient-to-br from-gray-500 to-gray-600'
-              }`}
-            >
+            <div className="relative flex items-center justify-center min-h-[190px] z-10">
               <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ repeat: 3, duration: 0.3 }}
-                className="text-9xl mb-4"
+                animate={isFlipping ? { rotateY: [0, 180, 360, 540, 720], y: [0, -25, 0] } : { rotateY: 0 }}
+                transition={{ duration: 1.2, ease: 'easeInOut' }}
+                className="w-36 h-36 rounded-full bg-[#f2ca45] border-4 border-[#2d2a43] shadow-[0_6px_0_#987f2c] flex items-center justify-center"
               >
-                {result === 'success' ? '⚡' : '💫'}
+                <span className="text-4xl font-black text-[#2d2a43]">{flipResult === 'tails' ? 'T' : 'H'}</span>
               </motion.div>
+            </div>
 
-              <h2 
-                className="text-5xl font-black text-white mb-3"
-                style={{ textShadow: '0 4px 8px rgba(0,0,0,0.3)' }}
-              >
-                {result === 'success' ? 'PERFECT!' : 'MISSED!'}
-              </h2>
+            {flipResult && (
+              <div className="relative mt-4 text-center bg-[#f5f3de] border-2 border-[#2d2a43] rounded-xl py-3 z-10">
+                <p className="text-xl font-black text-[#1f1e2d]">{flipResult.toUpperCase()}</p>
+                <p className="text-sm font-bold text-[#2d2a43]">
+                  {flipResult === 'heads' ? 'You are going first!' : 'Enemy is going first!'}
+                </p>
+              </div>
+            )}
+          </div>
 
-              <p className="text-white/90 text-xl font-bold">
-                {result === 'success' 
-                  ? 'You strike first!' 
-                  : 'Enemy moves first!'}
-              </p>
-            </motion.div>
-          )}
-        </motion.div>
+          <button
+            onClick={handleFlipCoin}
+            disabled={isFlipping || !!flipResult}
+            className="w-full bg-[#db5b34] border-2 border-[#2d2a43] text-white font-black py-4 rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isFlipping ? 'Flipping...' : flipResult ? 'Battle Starting...' : 'Flip Coin'}
+          </button>
+        </div>
       </div>
     </div>
   );

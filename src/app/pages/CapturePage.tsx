@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Star } from 'lucide-react';
+import { Sparkles, Star, ArrowLeft } from 'lucide-react';
 import { Pokemon } from '../types/pokemon';
 import { calculatePokemonRarity } from '../services/pokeapi';
+import { PokedexHeader } from '../components/PokedexHeader';
 
 export function CapturePage() {
   const navigate = useNavigate();
@@ -160,7 +161,19 @@ export function CapturePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-500 via-pink-500 to-red-500 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-purple-500 via-pink-500 to-red-500 flex flex-col">
+      <PokedexHeader
+        leftButton={
+          <button
+            onClick={() => navigate('/game/battle/fight')}
+            className="w-14 h-14 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+          >
+            <ArrowLeft className="w-6 h-6 text-gray-800" />
+          </button>
+        }
+      />
+
+      <div className="flex-1 flex items-center justify-center p-4 -mt-1">
       <div className="max-w-md w-full">
         {/* Capture Animation */}
         <AnimatePresence mode="wait">
@@ -409,6 +422,7 @@ export function CapturePage() {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
       </div>
     </div>
   );

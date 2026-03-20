@@ -192,7 +192,8 @@ export function BattleFightPage() {
     
     // Initialize HP values based on loaded data
     const initialMaxPlayerHP = teamData[0]?.stats?.hp || 100;
-    const initialMaxEnemyHP = (enemyData?.stats?.hp || 100) * 3;
+    const enemyHpMultiplier = modeData === 'boss' ? 2.5 : 3;
+    const initialMaxEnemyHP = (enemyData?.stats?.hp || 100) * enemyHpMultiplier;
     setPlayerHP(initialMaxPlayerHP);
     setEnemyHP(initialMaxEnemyHP);
   }, [location, navigate]);
@@ -305,7 +306,7 @@ export function BattleFightPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-indigo-900 to-black flex flex-col">
+    <div className="min-h-screen pb-20 bg-[linear-gradient(180deg,#73dee3_0%,#b9e4db_35%,#b3e073_58%,#68d7bb_74%,#48ae4e_100%)] flex flex-col">
       {/* Pokedex Header */}
       <PokedexHeader
         leftButton={
@@ -318,198 +319,136 @@ export function BattleFightPage() {
         }
       />
 
-      {/* Battle Content */}
-      <div className="flex flex-col p-4">
-        <div className="flex justify-between items-start mb-6 gap-4">
-          {/* Player Pokemon */}
-          <div className="flex-1 pr-2">
-          <motion.div
-            initial={{ x: -100, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            className="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl p-3 shadow-lg"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <img
-                src={currentPokemon.image}
-                alt={currentPokemon.name}
-                className="w-12 h-12 object-contain"
-                style={{ imageRendering: 'pixelated' }}
-              />
-              <div>
-                <h3 className="text-white font-bold capitalize text-sm">{currentPokemon.name}</h3>
-                <div className="text-xs text-white/80">Lv. {Math.floor(currentPokemon.stats.hp / 10)}</div>
+      <div className="w-full px-4 pt-4">
+      {/* Retro Battle Scene */}
+      <div className="relative flex-1 min-h-[395px] rounded-2xl overflow-hidden mt-1">
+          
+
+          {/* Battle circles */}
+          <div className="absolute top-[92px] right-[26px] w-44 h-16 rounded-full bg-[#52b95a] shadow-[0_6px_0_rgba(47,105,50,0.75)]" />
+          <div className="absolute bottom-[34px] left-[10px] w-56 h-20 rounded-full bg-[#61bd5f] shadow-[0_6px_0_rgba(47,105,50,0.75)]" />
+
+          {/* Enemy Status Panel */}
+          <div className="absolute top-4 left-4 z-20 w-[58%] max-w-[250px] bg-[#f5f3de] rounded-sm px-3 py-2 shadow-[4px_4px_0_#2d2a43]">
+            <div className="flex items-center justify-between mb-1 text-[#1f1e2d]">
+              <p className="font-black text-sm capitalize truncate pr-2">{enemy.name}</p>
+              <p className="font-black text-xs">Lv {Math.max(1, Math.floor(enemy.stats.hp / 10))}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black text-[#b74d35]">HP</span>
+              <div className="h-3 flex-1 bg-[#c2bca4] rounded-sm overflow-hidden">
+                <motion.div
+                  initial={{ width: '100%' }}
+                  animate={{ width: `${(enemyHP / maxEnemyHP) * 100}%` }}
+                  className="h-full bg-[#5fcc73]"
+                  transition={{ duration: 0.4 }}
+                />
               </div>
             </div>
-            
-            {/* HP Bar */}
-            <div className="bg-white/30 rounded-full h-3 overflow-hidden">
-              <motion.div
-                initial={{ width: '100%' }}
-                animate={{ width: `${(playerHP / maxPlayerHP) * 100}%` }}
-                className="h-full bg-gradient-to-r from-green-400 to-green-600"
-                transition={{ duration: 0.5 }}
-              />
-            </div>
-            <div className="text-white text-xs text-right mt-1">HP: {playerHP}/{maxPlayerHP}</div>
-          </motion.div>
-        </div>
+            <p className="text-[11px] mt-1 text-right font-bold text-[#2d2a43]">{enemyHP}/{maxEnemyHP}</p>
+          </div>
 
-        {/* Enemy Pokemon */}
-        <div className="flex-1 pl-2">
+          {/* Enemy Sprite */}
           <motion.div
-            initial={{ x: 100, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            className="bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl p-3 shadow-lg"
-          >
-            <div className="flex items-center gap-2 mb-2 flex-row-reverse">
-              <img
-                src={enemy.image}
-                alt={enemy.name}
-                className="w-12 h-12 object-contain"
-                style={{ imageRendering: 'pixelated' }}
-              />
-              <div className="text-right">
-                <h3 className="text-white font-bold capitalize text-sm">{enemy.name}</h3>
-                <div className="text-xs text-white/80">Lv. {Math.floor(enemy.stats.hp / 10)}</div>
-              </div>
-            </div>
-            
-            {/* HP Bar */}
-            <div className="bg-white/30 rounded-full h-3 overflow-hidden">
-              <motion.div
-                initial={{ width: '100%' }}
-                animate={{ width: `${(enemyHP / maxEnemyHP) * 100}%` }}
-                className="h-full bg-gradient-to-r from-yellow-400 to-orange-600"
-                transition={{ duration: 0.5 }}
-              />
-            </div>
-            <div className="text-white text-xs text-right mt-1">HP: {enemyHP}/{maxEnemyHP}</div>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Battle Scene */}
-      <div className="relative flex-1 min-h-[180px] sm:min-h-[220px] mb-4">
-        {/* Pokemon Images */}
-        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-between px-4 sm:px-10">
-          {/* Player Pokemon */}
-          <motion.div
-            animate={{ 
-              y: battlePhase === 'player-turn' ? [0, -10, 0] : 0,
-              scale: showDamage?.target === 'player' ? 0.9 : 1
-            }}
-            transition={{ 
-              y: { repeat: Infinity, duration: 1.5 },
-              scale: { duration: 0.2 }
-            }}
-            className="relative w-[42%] flex justify-start"
-          >
-            <img
-              src={currentPokemon.image}
-              alt={currentPokemon.name}
-              className="w-24 h-24 sm:w-32 sm:h-32 object-contain drop-shadow-2xl"
-              style={{ imageRendering: 'pixelated' }}
-            />
-          </motion.div>
-
-          {/* Enemy Pokemon */}
-          <motion.div
-            animate={{ 
-              y: battlePhase === 'enemy-turn' ? [0, -10, 0] : 0,
-              scale: showDamage?.target === 'enemy' ? 0.9 : 1
-            }}
-            transition={{ 
-              y: { repeat: Infinity, duration: 1.5 },
-              scale: { duration: 0.2 }
-            }}
-            className="relative w-[42%] flex justify-end"
+            animate={{ y: battlePhase === 'enemy-turn' ? [0, -6, 0] : 0, scale: showDamage?.target === 'enemy' ? 0.92 : 1 }}
+            transition={{ y: { repeat: Infinity, duration: 1.4 }, scale: { duration: 0.2 } }}
+            className="absolute top-[78px] right-[44px] z-10"
           >
             <img
               src={enemy.image}
               alt={enemy.name}
-              className="w-24 h-24 sm:w-32 sm:h-32 object-contain drop-shadow-2xl"
+              className="w-28 h-28 sm:w-36 sm:h-36 object-contain drop-shadow-[0_8px_0_rgba(44,41,66,0.55)]"
               style={{ imageRendering: 'pixelated' }}
             />
           </motion.div>
-        </div>
 
-        {/* Damage Numbers */}
-        <AnimatePresence>
-          {showDamage && (
-            <motion.div
-              initial={{ scale: 0, y: 0 }}
-              animate={{ scale: 1.5, y: -50 }}
-              exit={{ opacity: 0, scale: 0.5 }}
-              className={`absolute ${
-                showDamage.target === 'enemy' ? 'right-1/4' : 'left-1/4'
-              } top-8 z-10`}
-            >
-              <div className="text-5xl font-black text-yellow-400 drop-shadow-lg" style={{ textShadow: '0 0 20px rgba(250,204,21,0.8), 0 4px 0 #000' }}>
-                -{showDamage.amount}
+          {/* Player Sprite */}
+          <motion.div
+            animate={{ y: battlePhase === 'player-turn' ? [0, -8, 0] : 0, scale: showDamage?.target === 'player' ? 0.92 : 1 }}
+            transition={{ y: { repeat: Infinity, duration: 1.4 }, scale: { duration: 0.2 } }}
+            className="absolute bottom-[38px] left-[24px] z-10"
+          >
+            <img
+              src={currentPokemon.image}
+              alt={currentPokemon.name}
+              className="w-32 h-32 sm:w-40 sm:h-40 object-contain drop-shadow-[0_8px_0_rgba(44,41,66,0.55)]"
+              style={{ imageRendering: 'pixelated' }}
+            />
+          </motion.div>
+
+          {/* Player Status Panel */}
+          <div className="absolute bottom-4 right-4 z-20 w-[62%] max-w-[280px] bg-[#f5f3de] rounded-sm px-3 py-2 shadow-[4px_4px_0_#2d2a43]">
+            <div className="flex items-center justify-between mb-1 text-[#1f1e2d]">
+              <p className="font-black text-sm capitalize truncate pr-2">{currentPokemon.name}</p>
+              <p className="font-black text-xs">Lv {Math.max(1, Math.floor(currentPokemon.stats.hp / 10))}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black text-[#b74d35]">HP</span>
+              <div className="h-3 flex-1 bg-[#c2bca4] rounded-sm overflow-hidden">
+                <motion.div
+                  initial={{ width: '100%' }}
+                  animate={{ width: `${(playerHP / maxPlayerHP) * 100}%` }}
+                  className="h-full bg-[#5fcc73]"
+                  transition={{ duration: 0.4 }}
+                />
               </div>
-              <div className="text-sm font-bold text-white text-center mt-1">
-                {showDamage.type}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {currentMoveLabel && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-4 text-center text-white font-bold text-lg"
-        >
-          {currentMoveLabel}
-        </motion.div>
-      )}
-
-      {/* Action Buttons */}
-      <div className="space-y-3 mt-4 pb-1">
-        {battlePhase === 'player-turn' && (
-          <>
-            <motion.button
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              onClick={handleAttackClick}
-              disabled={loadingMoves || playerMoves.length === 0}
-              className="w-full bg-gradient-to-r from-red-500 to-orange-500 text-white font-black text-2xl py-6 rounded-2xl shadow-lg hover:shadow-2xl active:scale-95 transition-all border-4 border-white/30"
-            >
-              <div className="flex items-center justify-center gap-3">
-                <Zap className="w-8 h-8" />
-                <span>{loadingMoves ? 'Loading Moves...' : 'ATTACK!'}</span>
-              </div>
-            </motion.button>
-
-            {/* Switch Pokemon Button */}
-            {team.length > 1 && (
-              <motion.button
-                initial={{ y: 50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                onClick={() => setShowSwitchModal(true)}
-                className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold text-lg py-4 rounded-2xl shadow-lg hover:shadow-xl active:scale-95 transition-all border-2 border-white/30"
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <RefreshCw className="w-5 h-5" />
-                  <span>Switch Pokémon</span>
-                </div>
-              </motion.button>
-            )}
-          </>
-        )}
-
-        {battlePhase === 'enemy-turn' && (
-          <div className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white font-bold text-xl py-6 rounded-2xl text-center opacity-75">
-            Enemy's Turn...
+            </div>
+            <p className="text-[11px] mt-1 text-right font-bold text-[#2d2a43]">{playerHP}/{maxPlayerHP}</p>
           </div>
-        )}
+
+          {/* Damage Numbers */}
+          <AnimatePresence>
+            {showDamage && (
+              <motion.div
+                initial={{ scale: 0, y: 0 }}
+                animate={{ scale: 1.2, y: -36 }}
+                exit={{ opacity: 0, scale: 0.7 }}
+                className={`absolute ${showDamage.target === 'enemy' ? 'right-16 top-28' : 'left-16 bottom-28'} z-30`}
+              >
+                <div className="text-4xl font-black text-[#ffd24d]" style={{ textShadow: '0 0 12px rgba(0,0,0,0.45)' }}>
+                  -{showDamage.amount}
+                </div>
+                <div className="text-xs font-bold text-[#1f1e2d] text-center bg-white/80 px-2 py-0.5 rounded">
+                  {showDamage.type}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
       </div>
 
-      {/* Turn Counter */}
-      <div className="text-center text-white/60 text-sm mt-2">
-        Turn {turnCount + 1}
+      {/* Retro Command Area */}
+      <div className="bg-[#db5b34] rounded-2xl p-1 mt-3">
+          <div className="bg-[#4f8f98] rounded-xl p-3 min-h-[90px] flex items-center justify-center">
+            <p className="text-white text-lg font-black text-center">
+              {currentMoveLabel ?? (battlePhase === 'enemy-turn' ? `Enemy's turn...` : `What will ${currentPokemon.name} do?`)}
+            </p>
+          </div>
+      </div>
+
+      {/* Command Buttons */}
+      <div className="grid grid-cols-2 gap-2 mt-3">
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={handleAttackClick}
+            disabled={battlePhase !== 'player-turn' || loadingMoves || playerMoves.length === 0}
+            className="bg-[#f08f4f] text-white font-black py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <Zap className="w-5 h-5" />
+            <span>{loadingMoves ? 'Loading...' : 'FIGHT'}</span>
+          </motion.button>
+
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowSwitchModal(true)}
+            disabled={battlePhase !== 'player-turn' || team.length <= 1}
+            className="bg-[#5d8ed8] text-white font-black py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <RefreshCw className="w-5 h-5" />
+            <span>POKEMON</span>
+          </motion.button>
+      </div>
+
+      <div className="text-center text-[#1f1e2d] text-xs font-semibold mt-2">Turn {turnCount + 1}</div>
       </div>
 
       {/* Switch Pokemon Modal */}
@@ -600,7 +539,6 @@ export function BattleFightPage() {
           </motion.div>
         )}
       </AnimatePresence>
-      </div>
     </div>
   );
 }

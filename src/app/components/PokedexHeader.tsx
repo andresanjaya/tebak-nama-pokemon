@@ -30,10 +30,7 @@ export function PokedexHeader({ title, leftButton, rightButton }: PokedexHeaderP
         )}
       </div>
       
-      {/* Title */}
-      {title && (
-        <h1 className="text-white font-bold text-2xl">{title}</h1>
-      )}
+      
     </div>
   );
 }

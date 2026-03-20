@@ -35,7 +35,7 @@ export function GameMenuPage() {
       <div className="p-4">
         {/* Welcome Section */}
         <div className="mb-6">
-          <h2 className="text-2xl font-black text-gray-900 mb-2">
+          <h2 className="text-2xl font-black text-gray-900 mb-2 mt-2">
             Choose Your Game
           </h2>
           <p className="text-gray-600">

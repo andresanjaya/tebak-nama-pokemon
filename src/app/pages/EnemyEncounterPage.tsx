@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion } from 'motion/react';
-import { Zap, Swords } from 'lucide-react';
+import { Zap, Swords, ArrowLeft } from 'lucide-react';
 import { Pokemon } from '../types/pokemon';
 import { fetchPokemonById, fetchRandomLegendaryPokemon } from '../services/pokeapi';
+import { PokedexHeader } from '../components/PokedexHeader';
 
 interface CapturedPokemon extends Pokemon {
   rarity: number;
@@ -79,11 +80,11 @@ export function EnemyEncounterPage() {
             ...enemyPokemon,
             stats: {
               ...enemyPokemon.stats,
-              hp: Math.floor(enemyPokemon.stats.hp * 1.5),
-              attack: Math.floor(enemyPokemon.stats.attack * 1.2),
-              defense: Math.floor(enemyPokemon.stats.defense * 1.2),
-              specialAttack: Math.floor(enemyPokemon.stats.specialAttack * 1.2),
-              specialDefense: Math.floor(enemyPokemon.stats.specialDefense * 1.2),
+              hp: Math.floor(enemyPokemon.stats.hp * 1.3),
+              attack: Math.floor(enemyPokemon.stats.attack * 1.1),
+              defense: Math.floor(enemyPokemon.stats.defense * 1.1),
+              specialAttack: Math.floor(enemyPokemon.stats.specialAttack * 1.1),
+              specialDefense: Math.floor(enemyPokemon.stats.specialDefense * 1.1),
               speed: Math.floor(enemyPokemon.stats.speed * 1),
             },
           };
@@ -134,26 +135,30 @@ export function EnemyEncounterPage() {
   const playerPokemon = team[0]; // Main Pokemon
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-indigo-900 to-black flex items-center justify-center p-4 overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-pink-500 rounded-full blur-3xl animate-pulse" />
-      </div>
+    <div className="min-h-screen pb-20 bg-[linear-gradient(180deg,#73dee3_0%,#b9e4db_35%,#b3e073_58%,#68d7bb_74%,#48ae4e_100%)] overflow-hidden">
+      <PokedexHeader
+        leftButton={
+          <button
+            onClick={() => navigate('/game/pokemon/select', { state: { team, mode } })}
+            className="w-14 h-14 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+          >
+            <ArrowLeft className="w-6 h-6 text-gray-800" />
+          </button>
+        }
+      />
 
-      <div className="relative w-full max-w-4xl">
+      <div className="relative w-full px-4 pt-6">
         {/* Wild Pokemon Appeared Text */}
         <motion.div
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center mb-8"
         >
           <motion.h1
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
-            className="text-5xl font-black text-white mb-2"
-            style={{ textShadow: '0 0 20px rgba(255,255,255,0.5)' }}
+            className="text-4xl font-black text-[#f8fff9] mb-1"
           >
             WILD POKÉMON
           </motion.h1>
@@ -161,15 +166,14 @@ export function EnemyEncounterPage() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.5, type: 'spring', stiffness: 200 }}
-            className="text-6xl font-black text-yellow-400"
-            style={{ textShadow: '0 0 30px rgba(250,204,21,0.8)' }}
+            className="text-5xl font-black text-[#ffe14f]"
           >
             APPEARED!
           </motion.h2>
         </motion.div>
 
         {/* Battle Preview */}
-        <div className="relative flex items-center justify-between">
+        <div className="relative flex items-center justify-between gap-3">
           {/* Player Pokemon */}
           <motion.div
             initial={{ x: -300, opacity: 0 }}
@@ -177,10 +181,10 @@ export function EnemyEncounterPage() {
             transition={{ delay: 0.8, type: 'spring' }}
             className="flex-1"
           >
-            <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl p-6 shadow-2xl border-4 border-white/30">
+            <div className="bg-[#2d5957] rounded-3xl p-4 shadow-xl border-4 border-[#a7d9ce]">
               <div className="text-center mb-3">
-                <p className="text-white/80 text-sm font-bold mb-1">YOUR POKÉMON</p>
-                <h3 className="text-2xl font-black text-white capitalize">
+                <p className="text-[#d4efe6] text-xs font-bold mb-1">YOUR POKÉMON</p>
+                <h3 className="text-3xl font-black text-white capitalize">
                   {playerPokemon?.name}
                 </h3>
               </div>
@@ -197,8 +201,8 @@ export function EnemyEncounterPage() {
               )}
 
               {/* Power Indicator */}
-              <div className="mt-3 bg-white/20 rounded-xl p-2">
-                <p className="text-white text-xs text-center">
+              <div className="mt-3 bg-[#4e7a77] rounded-xl p-2">
+                <p className="text-[#f3fff8] text-xs text-center font-semibold">
                   Power: {playerPokemon?.stats.attack || 0}
                 </p>
               </div>
@@ -213,11 +217,8 @@ export function EnemyEncounterPage() {
               transition={{ type: 'spring', stiffness: 200 }}
               className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
             >
-              <div className="relative">
-                <div className="absolute inset-0 bg-yellow-400 rounded-full blur-xl animate-pulse" />
-                <div className="relative bg-gradient-to-br from-red-500 to-orange-500 w-24 h-24 rounded-full flex items-center justify-center border-4 border-white shadow-2xl">
-                  <Swords className="w-12 h-12 text-white" />
-                </div>
+              <div className="w-24 h-24 rounded-full flex items-center justify-center border-4 border-[#f8e59a] bg-[#db5b34] shadow-xl">
+                <Swords className="w-12 h-12 text-white" />
               </div>
             </motion.div>
           )}
@@ -229,10 +230,10 @@ export function EnemyEncounterPage() {
             transition={{ delay: 0.8, type: 'spring' }}
             className="flex-1"
           >
-            <div className="bg-gradient-to-br from-red-500 to-pink-500 rounded-3xl p-6 shadow-2xl border-4 border-white/30">
+            <div className="bg-[#4d6370] rounded-3xl p-4 shadow-xl border-4 border-[#a7d9ce]">
               <div className="text-center mb-3">
-                <p className="text-white/80 text-sm font-bold mb-1">ENEMY POKÉMON</p>
-                <h3 className="text-2xl font-black text-white capitalize">
+                <p className="text-[#d4efe6] text-xs font-bold mb-1">ENEMY POKÉMON</p>
+                <h3 className="text-3xl font-black text-white capitalize">
                   {enemy?.name || '???'}
                 </h3>
               </div>
@@ -251,8 +252,8 @@ export function EnemyEncounterPage() {
               )}
 
               {/* Power Indicator */}
-              <div className="mt-3 bg-white/20 rounded-xl p-2">
-                <p className="text-white text-xs text-center">
+              <div className="mt-3 bg-[#6f8590] rounded-xl p-2">
+                <p className="text-[#f3fff8] text-xs text-center font-semibold">
                   Power: {enemy?.stats.attack || '???'}
                 </p>
               </div>
@@ -265,10 +266,10 @@ export function EnemyEncounterPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 2 }}
-          className="text-center mt-8"
+          className="text-center mt-7"
         >
-          <div className="flex items-center justify-center gap-2 text-white">
-            <Zap className="w-5 h-5 animate-pulse text-yellow-400" />
+          <div className="flex items-center justify-center gap-2 text-[#1f1e2d]">
+            <Zap className="w-5 h-5 animate-pulse text-[#c45a3a]" />
             <span className="font-bold">Preparing for battle...</span>
           </div>
         </motion.div>

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star, Zap, Shield, ChevronRight, Shuffle, Gift, ArrowLeft, Heart } from 'lucide-react';
+import { Star, ChevronRight, Shuffle, Gift, ArrowLeft } from 'lucide-react';
 import { Pokemon } from '../types/pokemon';
 import { fetchPokemonById, calculatePokemonRarity } from '../services/pokeapi';
 import { PokedexHeader } from '../components/PokedexHeader';
+import { TypeBadge } from '../components/TypeBadge';
+import { typeLightColors } from '../utils/typeColors';
 
 interface CapturedPokemon extends Pokemon {
   rarity: number;
@@ -150,7 +152,7 @@ export function PokemonSelectionPage() {
   const canStart = selectedSlots.some(slot => slot !== null);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-600 via-purple-600 to-pink-600 pb-20">
+    <div className="min-h-screen pb-20 bg-[linear-gradient(180deg,#73dee3_0%,#b9e4db_35%,#b3e073_58%,#68d7bb_74%,#48ae4e_100%)]">
       <PokedexHeader
         leftButton={
           <button
@@ -162,17 +164,17 @@ export function PokemonSelectionPage() {
         }
       />
 
-      <div className="max-w-4xl mx-auto p-4">
+      <div className="w-full px-4 pt-4">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="text-2xl mt-3 font-black text-white mb-2">
+          <h1 className="text-2xl font-black text-[#1f1e2d] mb-2">
             SELECT YOUR POKEMON
           </h1>
-          <p className="text-white/80">
+          <p className="text-[#1f1e2d] font-semibold">
             Choose up to 3 Pokémon for battle
           </p>
         </motion.div>
@@ -188,20 +190,21 @@ export function PokemonSelectionPage() {
               transition={{ delay: index * 0.1 }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className={`relative bg-white/10 backdrop-blur-sm border-4 rounded-3xl p-4 min-h-[200px] flex flex-col items-center justify-center transition-all ${
+              className={`relative bg-[#f5f3de] border-4 rounded-3xl p-4 min-h-[200px] flex flex-col items-center justify-center transition-all ${
                 pokemon 
                   ? 'border-yellow-400 shadow-lg shadow-yellow-400/50' 
-                  : 'border-white/30 border-dashed'
+                  : 'border-[#a7d9ce] border-dashed'
               }`}
+              style={pokemon ? { backgroundColor: typeLightColors[pokemon.types[0]] } : undefined}
             >
               {/* Slot Number */}
-              <div className="absolute top-2 left-2 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+              <div className="absolute top-2 left-2 w-8 h-8 bg-[#DC2626] rounded-full flex items-center justify-center">
                 <span className="text-white font-black">{index + 1}</span>
               </div>
 
               {/* Rental Badge */}
               {pokemon?.isRented && (
-                <div className="absolute top-2 right-2 bg-gradient-to-r from-orange-400 to-red-500 text-white text-xs font-black px-2 py-1 rounded-full">
+                <div className="absolute top-2 right-2 bg-[#DC2626] text-white text-xs font-black px-2 py-1 rounded-full">
                   RENTAL
                 </div>
               )}
@@ -214,7 +217,7 @@ export function PokemonSelectionPage() {
                     className="w-24 h-24 object-contain mb-2"
                     style={{ imageRendering: 'pixelated' }}
                   />
-                  <h3 className="text-white font-bold capitalize text-sm mb-1">
+                  <h3 className="text-[#1f1e2d] font-bold capitalize text-sm mb-1">
                     {pokemon.name}
                   </h3>
                   
@@ -233,19 +236,14 @@ export function PokemonSelectionPage() {
                   </div>
 
                   {/* Type Badge */}
-                  <div className="flex gap-1">
+                  <div className={`w-full flex items-center ${pokemon.types.length > 1 ? 'flex-col gap-1' : 'justify-center'}`}>
                     {pokemon.types.map(type => (
-                      <span
-                        key={type}
-                        className="px-2 py-0.5 bg-white/20 rounded-full text-xs text-white capitalize"
-                      >
-                        {type}
-                      </span>
+                      <TypeBadge key={type} type={type} size="sm" />
                     ))}
                   </div>
                 </>
               ) : (
-                <div className="text-white/50 text-center">
+                <div className="text-[#5b6666] text-center">
                   <div className="text-5xl mb-2">+</div>
                   <p className="text-xs">Tap to scan tag</p>
                 </div>
@@ -259,7 +257,7 @@ export function PokemonSelectionPage() {
           <button
             onClick={handleRandomize}
             disabled={collection.length === 0}
-            className="w-full bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white font-bold py-4 rounded-2xl hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+            className="w-full bg-[#f5f3de] border-2 border-[#2d2a43] text-[#1f1e2d] font-bold py-4 rounded-2xl hover:bg-[#ece8cc] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
           >
             <Shuffle className="w-5 h-5" />
             <span>Random Selection</span>
@@ -268,7 +266,7 @@ export function PokemonSelectionPage() {
           <button
             onClick={handleRentPokemon}
             disabled={isRenting}
-            className="w-full bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white font-bold py-4 rounded-2xl hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+            className="w-full bg-[#f5f3de] border-2 border-[#2d2a43] text-[#1f1e2d] font-bold py-4 rounded-2xl hover:bg-[#ece8cc] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
           >
             <Gift className="w-5 h-5" />
             <span>{isRenting ? 'Loading Rental Pokemon...' : 'Rent Random Pokémon'}</span>
@@ -281,7 +279,7 @@ export function PokemonSelectionPage() {
             whileTap={canStart ? { scale: 0.98 } : {}}
             className={`w-full font-black py-6 rounded-2xl shadow-2xl transition-all flex items-center justify-center gap-2 text-xl ${
               canStart
-                ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white hover:shadow-yellow-400/50'
+                ? 'bg-[#f5f3de] border-2 border-[#2d2a43] text-[#1f1e2d] hover:bg-[#ece8cc]'
                 : 'bg-gray-400 text-gray-200 cursor-not-allowed'
             }`}
           >
@@ -291,9 +289,9 @@ export function PokemonSelectionPage() {
         </div>
 
         {/* Collection Info */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
-          <p className="text-white/80 text-sm">
-            Collection: <span className="font-bold text-white">{collection.length}</span> Pokémon
+        <div className="bg-[#f5f3de] border-2 border-[#2d2a43] rounded-2xl p-4 text-center">
+          <p className="text-[#1f1e2d] text-sm">
+            Collection: <span className="font-bold text-[#1f1e2d]">{collection.length}</span> Pokémon
           </p>
           {collection.length === 0 && (
             <div className="mt-3 bg-yellow-400/20 border-2 border-yellow-400 rounded-xl p-3">
@@ -317,7 +315,7 @@ export function PokemonSelectionPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
               onClick={() => {
                 setShowCollection(false);
                 setSelectingSlot(null);
@@ -328,9 +326,9 @@ export function PokemonSelectionPage() {
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-gradient-to-b from-purple-900 to-indigo-900 rounded-3xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+                className="bg-[#f5f3de] border-2 border-[#2d2a43] rounded-3xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
               >
-                <h2 className="text-2xl font-black text-white mb-4 text-center">
+                <h2 className="text-2xl font-black text-[#1f1e2d] mb-4 text-center">
                   SELECT POKÉMON FOR SLOT {selectingSlot !== null ? selectingSlot + 1 : ''}
                 </h2>
 
@@ -341,7 +339,7 @@ export function PokemonSelectionPage() {
                       onClick={() => handlePokemonSelect(pokemon)}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="bg-white/10 backdrop-blur-sm border-2 border-white/30 rounded-2xl p-3 hover:border-yellow-400 transition-all"
+                      className="bg-white border-2 border-[#2d2a43] rounded-2xl p-3 hover:border-[#DC2626] transition-all"
                     >
                       <img
                         src={pokemon.image}
@@ -349,7 +347,7 @@ export function PokemonSelectionPage() {
                         className="w-16 h-16 object-contain mx-auto mb-2"
                         style={{ imageRendering: 'pixelated' }}
                       />
-                      <p className="text-white text-xs font-bold capitalize truncate">
+                      <p className="text-[#1f1e2d] text-xs font-bold capitalize truncate">
                         {pokemon.name}
                       </p>
                       <div className="flex justify-center gap-0.5 mt-1">
@@ -366,7 +364,7 @@ export function PokemonSelectionPage() {
                     setShowCollection(false);
                     setSelectingSlot(null);
                   }}
-                  className="w-full mt-4 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition-all"
+                  className="w-full mt-4 bg-[#DC2626] text-white font-bold py-3 rounded-xl hover:bg-[#B91C1C] transition-all"
                 >
                   Cancel
                 </button>

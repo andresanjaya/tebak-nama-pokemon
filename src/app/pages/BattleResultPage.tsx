@@ -1,10 +1,11 @@
 import { useNavigate, useLocation } from 'react-router';
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { Trophy, Star, Zap, RotateCcw, Home } from 'lucide-react';
+import { Trophy, Star, Zap, RotateCcw, Home, ArrowLeft } from 'lucide-react';
 import { Pokemon } from '../types/pokemon';
 import { applyXpGain } from '../utils/playerProgress';
 import { calculatePokemonRarity, fetchRandomPokemon } from '../services/pokeapi';
+import { PokedexHeader } from '../components/PokedexHeader';
 
 export function BattleResultPage() {
   const navigate = useNavigate();
@@ -164,7 +165,19 @@ export function BattleResultPage() {
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-yellow-400 via-orange-400 to-red-500 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-yellow-400 via-orange-400 to-red-500 flex flex-col">
+      <PokedexHeader
+        leftButton={
+          <button
+            onClick={() => navigate('/game/battle')}
+            className="w-14 h-14 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+          >
+            <ArrowLeft className="w-6 h-6 text-gray-800" />
+          </button>
+        }
+      />
+
+      <div className="flex-1 flex items-center justify-center p-4 -mt-1">
       <div className="max-w-md w-full">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
@@ -358,6 +371,7 @@ export function BattleResultPage() {
             </motion.button>
           </div>
         </motion.div>
+      </div>
       </div>
 
       {showRewardModal && levelUpRewards[currentRewardIndex] && (

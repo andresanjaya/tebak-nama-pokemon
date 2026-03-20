@@ -199,14 +199,7 @@ export function DetailPage(): JSX.Element {
             <h2 className="text-xl font-bold text-gray-900 mb-4">Weaknesses</h2>
             <div className="flex flex-wrap gap-2">
               {pokemon.weaknesses.map((weakness, index) => (
-                <div
-                  key={index}
-                  className="px-4 py-2 rounded-full font-semibold text-white capitalize text-sm flex items-center gap-2"
-                  style={{ backgroundColor: typeColors[weakness.type] }}
-                >
-                  <TypeIcon type={weakness.type} className="w-4 h-4 text-white" />
-                  {weakness.type}
-                </div>
+                <TypeBadge key={`${weakness.type}-${index}`} type={weakness.type} />
               ))}
             </div>
           </div>
