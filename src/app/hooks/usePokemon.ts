@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Pokemon } from '../types/pokemon';
 import { fetchPokemonList, fetchPokemonById } from '../services/pokeapi';
 
@@ -7,11 +7,72 @@ export const usePokemonList = () => {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  
-  const POKEMON_PER_PAGE = 200;
+  const [hasMore, setHasMore] = useState(false);
+  const [globalReady, setGlobalReady] = useState(false);
+  const fullLoadPromiseRef = useRef<Promise<void> | null>(null);
+
+  const QUICK_LOAD_COUNT = 151;
   const TOTAL_POKEMON = 898;
+  const CACHE_KEY = 'pokemonFullCacheV1';
+  const CACHE_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours
+
+  const cacheFullDataset = (data: Pokemon[]) => {
+    try {
+      localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({ timestamp: Date.now(), data })
+      );
+    } catch (err) {
+      console.warn('Failed to cache full Pokemon dataset:', err);
+    }
+  };
+
+  const getCachedFullDataset = (): Pokemon[] | null => {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+
+      const parsed = JSON.parse(raw) as { timestamp: number; data: Pokemon[] };
+      if (!parsed?.timestamp || !Array.isArray(parsed?.data)) {
+        return null;
+      }
+
+      if (Date.now() - parsed.timestamp > CACHE_TTL_MS) {
+        return null;
+      }
+
+      return parsed.data;
+    } catch {
+      return null;
+    }
+  };
+
+  const ensureGlobalDataLoaded = async () => {
+    if (globalReady) return;
+    if (fullLoadPromiseRef.current) {
+      await fullLoadPromiseRef.current;
+      return;
+    }
+
+    fullLoadPromiseRef.current = (async () => {
+      setLoadingMore(true);
+      try {
+        const fullData = await fetchPokemonList(TOTAL_POKEMON, 1);
+        setPokemon(fullData);
+        setGlobalReady(true);
+        setHasMore(false);
+        cacheFullDataset(fullData);
+      } finally {
+        setLoadingMore(false);
+      }
+    })();
+
+    try {
+      await fullLoadPromiseRef.current;
+    } finally {
+      fullLoadPromiseRef.current = null;
+    }
+  };
 
   // Initial load
   useEffect(() => {
@@ -19,10 +80,22 @@ export const usePokemonList = () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await fetchPokemonList(POKEMON_PER_PAGE, 1);
-        setPokemon(data);
-        setCurrentPage(1);
-        setHasMore(data.length >= POKEMON_PER_PAGE);
+
+        const cached = getCachedFullDataset();
+        if (cached && cached.length > 0) {
+          setPokemon(cached);
+          setGlobalReady(true);
+          setHasMore(false);
+          return;
+        }
+
+        // Fast first paint with Kanto-sized data, then complete full index in background.
+        const quickData = await fetchPokemonList(QUICK_LOAD_COUNT, 1);
+        setPokemon(quickData);
+        setGlobalReady(quickData.length >= TOTAL_POKEMON);
+        setHasMore(false);
+
+        void ensureGlobalDataLoaded();
       } catch (err) {
         setError('Failed to load Pokemon data. Please try again.');
         console.error(err);
@@ -36,36 +109,21 @@ export const usePokemonList = () => {
 
   // Load more function
   const loadMore = async () => {
-    if (loadingMore || !hasMore) return;
-
-    try {
-      setLoadingMore(true);
-      const nextPage = currentPage + 1;
-      const startId = (nextPage - 1) * POKEMON_PER_PAGE + 1;
-      
-      // Check if we've reached the end
-      if (startId > TOTAL_POKEMON) {
-        setHasMore(false);
-        return;
-      }
-
-      const data = await fetchPokemonList(POKEMON_PER_PAGE, nextPage);
-      
-      if (data.length === 0) {
-        setHasMore(false);
-      } else {
-        setPokemon(prev => [...prev, ...data]);
-        setCurrentPage(nextPage);
-        setHasMore(startId + POKEMON_PER_PAGE <= TOTAL_POKEMON);
-      }
-    } catch (err) {
-      console.error('Failed to load more Pokemon:', err);
-    } finally {
-      setLoadingMore(false);
-    }
+    // Kept for API compatibility with existing callers.
+    setLoadingMore(false);
+    setHasMore(false);
   };
 
-  return { pokemon, loading, loadingMore, error, hasMore, loadMore };
+  return {
+    pokemon,
+    loading,
+    loadingMore,
+    error,
+    hasMore,
+    loadMore,
+    globalReady,
+    ensureGlobalDataLoaded,
+  };
 };
 
 export const usePokemonById = (id: number) => {

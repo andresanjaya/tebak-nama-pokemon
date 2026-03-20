@@ -41,6 +41,7 @@ export interface Weakness {
 export interface Pokemon {
   id: number;
   name: string;
+  genus: string;
   types: PokemonType[];
   stats: PokemonStats;
   abilities: string[];

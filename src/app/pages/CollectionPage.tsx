@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Star, Trophy, Filter, Search } from 'lucide-react';
+import { ArrowLeft, Star, Trophy, Filter, Search, X, Check } from 'lucide-react';
 import { PokedexHeader } from '../components/PokedexHeader';
 import { Pokemon } from '../types/pokemon';
 
@@ -18,6 +18,7 @@ export function CollectionPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'normal' | 'boss' | 'event'>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'rarity' | 'name'>('recent');
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
 
   useEffect(() => {
     // Load captured Pokemon from localStorage
@@ -121,9 +122,9 @@ export function CollectionPage() {
           </motion.div>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-4">
-          <div className="relative">
+        {/* Search Bar + Filter Button */}
+        <div className="mb-4 flex items-center gap-2">
+          <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
@@ -133,48 +134,15 @@ export function CollectionPage() {
               className="w-full pl-12 pr-4 py-3 bg-white rounded-2xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
             />
           </div>
-        </div>
 
-        {/* Filters */}
-        <div className="flex gap-3 mb-4 overflow-x-auto pb-2">
-          {['all', 'normal', 'boss', 'event'].map((mode) => (
-            <button
-              key={mode}
-              onClick={() => setFilterMode(mode as any)}
-              className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition-all ${
-                filterMode === mode
-                  ? 'bg-blue-500 text-white shadow-lg'
-                  : 'bg-white text-gray-700'
-              }`}
-            >
-              {mode.charAt(0).toUpperCase() + mode.slice(1)}
-            </button>
-          ))}
-        </div>
-
-        {/* Sort Options */}
-        <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Filter className="w-4 h-4" />
-            <span>Sort:</span>
-          </div>
-          {[
-            { id: 'recent', label: 'Recent' },
-            { id: 'rarity', label: 'Rarity' },
-            { id: 'name', label: 'Name' },
-          ].map((sort) => (
-            <button
-              key={sort.id}
-              onClick={() => setSortBy(sort.id as any)}
-              className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition-all ${
-                sortBy === sort.id
-                  ? 'bg-purple-500 text-white shadow-lg'
-                  : 'bg-white text-gray-700'
-              }`}
-            >
-              {sort.label}
-            </button>
-          ))}
+          <button
+            type="button"
+            aria-label="Filter"
+            onClick={() => setShowFilterSheet(true)}
+            className="w-12 h-12 shrink-0 bg-white rounded-2xl border-2 border-gray-200 text-gray-700 flex items-center justify-center"
+          >
+            <Filter className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Collection Grid */}
@@ -252,6 +220,98 @@ export function CollectionPage() {
           </div>
         )}
       </div>
+
+      {/* Filter Bottom Sheet */}
+      <AnimatePresence>
+        {showFilterSheet && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/40 z-40"
+              onClick={() => setShowFilterSheet(false)}
+            />
+
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="fixed left-0 right-0 bottom-0 z-50 bg-white rounded-t-3xl p-5 shadow-2xl"
+            >
+              <div className="max-w-md mx-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-black text-gray-900">Filter & Sort</h3>
+                  <button
+                    onClick={() => setShowFilterSheet(false)}
+                    className="w-9 h-9 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="mb-4">
+                  <p className="text-sm font-bold text-gray-700 mb-2">Category</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['all', 'normal', 'boss', 'event'].map((mode) => {
+                      const active = filterMode === mode;
+                      return (
+                        <button
+                          key={mode}
+                          onClick={() => setFilterMode(mode as any)}
+                          className={`px-4 py-3 rounded-xl text-sm font-semibold flex items-center justify-between transition-all ${
+                            active
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          <span>{mode.charAt(0).toUpperCase() + mode.slice(1)}</span>
+                          {active && <Check className="w-4 h-4" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="mb-5">
+                  <p className="text-sm font-bold text-gray-700 mb-2">Sort By</p>
+                  <div className="space-y-2">
+                    {[
+                      { id: 'recent', label: 'Recent' },
+                      { id: 'rarity', label: 'Rarity' },
+                      { id: 'name', label: 'Name' },
+                    ].map((sort) => {
+                      const active = sortBy === sort.id;
+                      return (
+                        <button
+                          key={sort.id}
+                          onClick={() => setSortBy(sort.id as any)}
+                          className={`w-full px-4 py-3 rounded-xl text-sm font-semibold flex items-center justify-between transition-all ${
+                            active
+                              ? 'bg-purple-500 text-white'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          <span>{sort.label}</span>
+                          {active && <Check className="w-4 h-4" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowFilterSheet(false)}
+                  className="w-full bg-[#DC2626] text-white font-bold py-3 rounded-xl"
+                >
+                  Apply
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

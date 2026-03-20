@@ -1,5 +1,13 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
+import { Pokemon } from '../types/pokemon';
+
+interface CapturedPokemon extends Pokemon {
+  rarity: number;
+  capturedAt: string;
+  mode: string;
+}
 
 // Region data with starters
 const REGIONS = [
@@ -127,6 +135,39 @@ const REGIONS = [
 
 export function RegionsPage() {
   const navigate = useNavigate();
+  const [caughtByRegion, setCaughtByRegion] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const updateCaughtCounts = () => {
+      const saved = localStorage.getItem('capturedPokemon');
+      const captured = saved ? (JSON.parse(saved) as CapturedPokemon[]) : [];
+
+      // Use unique Pokemon IDs so duplicate captures don't inflate Pokedex progress.
+      const uniqueIds = new Set(captured.map((p) => p.id));
+      const counts: Record<string, number> = {};
+
+      REGIONS.forEach((region) => {
+        let count = 0;
+        uniqueIds.forEach((id) => {
+          if (id >= region.start && id <= region.end) {
+            count += 1;
+          }
+        });
+        counts[region.id] = count;
+      });
+
+      setCaughtByRegion(counts);
+    };
+
+    updateCaughtCounts();
+    window.addEventListener('storage', updateCaughtCounts);
+    window.addEventListener('focus', updateCaughtCounts);
+
+    return () => {
+      window.removeEventListener('storage', updateCaughtCounts);
+      window.removeEventListener('focus', updateCaughtCounts);
+    };
+  }, []);
 
   const handleRegionClick = (region: typeof REGIONS[0]) => {
     // Navigate to Pokedex with region filter
@@ -157,7 +198,7 @@ export function RegionsPage() {
                 {region.generation}
               </p>
               <p className="text-xs text-gray-600 font-bold">
-                Caught: {region.caught}/{region.total}
+                Caught: {caughtByRegion[region.id] ?? region.caught}/{region.total}
               </p>
             </div>
 

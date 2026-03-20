@@ -1,9 +1,8 @@
 import { useParams, useNavigate } from 'react-router';
-import { ArrowLeft, Heart, Weight, Ruler, Zap, Shield, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Heart, Weight, Ruler, Zap, Shield, ChevronLeft, ChevronRight, Dna } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { usePokemonById } from '../hooks/usePokemon';
 import { TypeBadge } from '../components/TypeBadge';
-import { TypeIcon } from '../components/TypeIcon';
 import { StatBar } from '../components/StatBar';
 import { motion, AnimatePresence } from 'motion/react';
 import { typeColors } from '../utils/typeColors';
@@ -185,9 +184,9 @@ export function DetailPage(): JSX.Element {
             <p className="font-bold text-gray-900">{pokemon.height / 10} m</p>
           </div>
           <div className="bg-white rounded-2xl p-4 shadow-md text-center">
-            <TypeIcon type={pokemon.types[0]} className="w-6 h-6 mx-auto mb-2" />
-            <p className="text-xs text-gray-500 mb-1">Category</p>
-            <p className="font-bold text-gray-900 capitalize text-xs">{pokemon.types[0]}</p>
+            <Dna className="w-6 h-6 text-gray-500 mx-auto mb-2" />
+            <p className="text-xs text-gray-500 mb-1">Species</p>
+            <p className="font-bold text-gray-900 text-xs">{pokemon.genus}</p>
           </div>
         </div>
       </div>

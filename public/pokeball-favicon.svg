@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Pokeball favicon">
+  <circle cx="32" cy="32" r="31" fill="#ffffff" stroke="#1f1e2d" stroke-width="2"/>
+  <path d="M2 32a30 30 0 0 1 60 0H2z" fill="#f43b35"/>
+  <path d="M2 32h60" stroke="#1f1e2d" stroke-width="7"/>
+  <circle cx="32" cy="32" r="7" fill="#ffffff" stroke="#1f1e2d" stroke-width="2.5"/>
+  <circle cx="32" cy="32" r="3" fill="#d9d9db"/>
+  <ellipse cx="16" cy="15" rx="7" ry="5" fill="#ffffff" opacity="0.9" transform="rotate(-28 16 15)"/>
+</svg>

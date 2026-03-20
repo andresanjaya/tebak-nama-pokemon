@@ -61,6 +61,12 @@ interface PokeAPIAbility {
 }
 
 interface PokeAPISpecies {
+  genera: {
+    genus: string;
+    language: {
+      name: string;
+    };
+  }[];
   flavor_text_entries: {
     flavor_text: string;
     language: {
@@ -90,6 +96,7 @@ interface PokeAPIResponse {
     };
   };
   species: {
+    name: string;
     url: string;
   };
 }
@@ -325,6 +332,13 @@ export const fetchPokemonById = async (id: number): Promise<Pokemon> => {
     const description = englishEntry
       ? englishEntry.flavor_text.replace(/\f/g, ' ').replace(/\n/g, ' ')
       : 'A mysterious Pokemon.';
+
+    const englishGenusEntry = speciesData.genera.find(
+      entry => entry.language.name === 'en'
+    );
+    const genus = englishGenusEntry
+      ? englishGenusEntry.genus.trim()
+      : data.species.name.split('-').map(capitalize).join(' ');
     
     // Fetch evolution chain
     let evolution: { prev?: Evolution; next?: Evolution } | undefined = undefined;
@@ -343,6 +357,7 @@ export const fetchPokemonById = async (id: number): Promise<Pokemon> => {
     const pokemon: Pokemon = {
       id: data.id,
       name: capitalize(data.name),
+      genus,
       types: data.types.map(t => mapPokemonType(t.type.name)),
       stats: {
         hp: data.stats.find(s => s.stat.name === 'hp')?.base_stat || 0,

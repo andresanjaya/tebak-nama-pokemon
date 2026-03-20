@@ -1,11 +1,11 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { Search, SlidersHorizontal, ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
 import { usePokemonList } from '../hooks/usePokemon';
 import { PokemonCard } from '../components/PokemonCard';
-import { TypeIcon } from '../components/TypeIcon';
-import { PokemonType, Pokemon } from '../types/pokemon';
+import { PokemonType } from '../types/pokemon';
 import { motion, AnimatePresence } from 'motion/react';
 import { typeColors } from '../utils/typeColors';
+import { getTypeIconStyle } from '../utils/typeIconImages';
 import { useSearchParams } from 'react-router';
 
 // Generation ranges
@@ -21,12 +21,23 @@ const GENERATION_RANGES = [
 ];
 
 export function PokedexPage() {
-  const { pokemon: pokemonData, loading, loadingMore, error, hasMore, loadMore } = usePokemonList();
+  const {
+    pokemon: pokemonData,
+    loading,
+    loadingMore,
+    error,
+    hasMore,
+    loadMore,
+    globalReady,
+    ensureGlobalDataLoaded,
+  } = usePokemonList();
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<PokemonType | 'all'>('all');
-  const [sortBy, setSortBy] = useState<'id' | 'name'>('id');
+  const [sortBy, setSortBy] = useState<'id' | 'name' | 'hp' | 'attack' | 'defense' | 'specialAttack' | 'specialDefense' | 'speed'>('id');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [applyingFilter, setApplyingFilter] = useState(false);
   
   // Ref for infinite scroll observer
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -39,6 +50,18 @@ export function PokedexPage() {
     'fire', 'water', 'grass', 'electric', 'psychic', 'ice', 
     'dragon', 'dark', 'fairy', 'normal', 'fighting', 'flying',
     'poison', 'ground', 'rock', 'bug', 'ghost', 'steel'
+  ];
+
+  const statSortOptions: Array<{
+    id: 'hp' | 'attack' | 'defense' | 'specialAttack' | 'specialDefense' | 'speed';
+    label: string;
+  }> = [
+    { id: 'hp', label: 'HP' },
+    { id: 'attack', label: 'ATK' },
+    { id: 'defense', label: 'DEF' },
+    { id: 'specialAttack', label: 'SP ATK' },
+    { id: 'specialDefense', label: 'SP DEF' },
+    { id: 'speed', label: 'SPEED' },
   ];
 
   // Infinite scroll observer
@@ -83,33 +106,23 @@ export function PokedexPage() {
 
     // Sort
     result.sort((a, b) => {
-      if (sortBy === 'id') return a.id - b.id;
-      if (sortBy === 'name') return a.name.localeCompare(b.name);
-      return 0;
+      const direction = sortDirection === 'asc' ? 1 : -1;
+
+      if (sortBy === 'name') {
+        return a.name.localeCompare(b.name) * direction;
+      }
+
+      if (sortBy === 'id') {
+        return (a.id - b.id) * direction;
+      }
+
+      const left = a.stats[sortBy] ?? 0;
+      const right = b.stats[sortBy] ?? 0;
+      return (left - right) * direction;
     });
 
     return result;
-  }, [pokemonData, searchQuery, selectedType, sortBy, regionStart, regionEnd]);
-
-  // Group Pokemon by generation
-  const groupedByGeneration = useMemo(() => {
-    const groups: { [key: number]: Pokemon[] } = {};
-    
-    GENERATION_RANGES.forEach(({ gen }) => {
-      groups[gen] = [];
-    });
-
-    filteredAndSortedPokemon.forEach((pokemon) => {
-      const generation = GENERATION_RANGES.find(
-        ({ start, end }) => pokemon.id >= start && pokemon.id <= end
-      );
-      if (generation) {
-        groups[generation.gen].push(pokemon);
-      }
-    });
-
-    return groups;
-  }, [filteredAndSortedPokemon]);
+  }, [pokemonData, searchQuery, selectedType, sortBy, sortDirection, regionStart, regionEnd]);
 
   if (loading) {
     return (
@@ -164,7 +177,6 @@ export function PokedexPage() {
                 <button
                   onClick={() => {
                     setSelectedType('all');
-                    setShowFilterModal(false);
                   }}
                   className={`w-full py-3 px-4 rounded-xl font-medium ${
                     selectedType === 'all'
@@ -179,7 +191,6 @@ export function PokedexPage() {
                     key={type}
                     onClick={() => {
                       setSelectedType(type);
-                      setShowFilterModal(false);
                     }}
                     style={{ 
                       backgroundColor: selectedType === type ? typeColors[type] : undefined,
@@ -197,10 +208,7 @@ export function PokedexPage() {
                         backgroundColor: selectedType === type ? 'rgba(255,255,255,0.3)' : typeColors[type]
                       }}
                     >
-                      <TypeIcon 
-                        type={type} 
-                        className={`w-4 h-4 ${selectedType === type ? 'text-white' : 'text-white'}`}
-                      />
+                        <div style={getTypeIconStyle(type, 14)} />
                     </div>
                     {type}
                   </button>
@@ -212,7 +220,6 @@ export function PokedexPage() {
                 <button
                   onClick={() => {
                     setSortBy('id');
-                    setShowFilterModal(false);
                   }}
                   className={`w-full py-3 px-4 rounded-xl font-medium ${
                     sortBy === 'id'
@@ -225,7 +232,6 @@ export function PokedexPage() {
                 <button
                   onClick={() => {
                     setSortBy('name');
-                    setShowFilterModal(false);
                   }}
                   className={`w-full py-3 px-4 rounded-xl font-medium ${
                     sortBy === 'name'
@@ -235,7 +241,63 @@ export function PokedexPage() {
                 >
                   A-Z
                 </button>
+
+                {statSortOptions.map((stat) => (
+                  <button
+                    key={stat.id}
+                    onClick={() => setSortBy(stat.id)}
+                    className={`w-full py-3 px-4 rounded-xl font-medium ${
+                      sortBy === stat.id
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-gray-100 text-gray-900'
+                    }`}
+                  >
+                    {stat.label}
+                  </button>
+                ))}
               </div>
+
+              <h3 className="font-bold text-lg mb-4 mt-6">Direction</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setSortDirection('asc')}
+                  className={`py-3 px-4 rounded-xl font-medium flex items-center justify-center gap-2 ${
+                    sortDirection === 'asc'
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-gray-100 text-gray-900'
+                  }`}
+                >
+                  <ArrowUpNarrowWide className="w-4 h-4" />
+                  ASC
+                </button>
+                <button
+                  onClick={() => setSortDirection('desc')}
+                  className={`py-3 px-4 rounded-xl font-medium flex items-center justify-center gap-2 ${
+                    sortDirection === 'desc'
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-gray-100 text-gray-900'
+                  }`}
+                >
+                  <ArrowDownWideNarrow className="w-4 h-4" />
+                  DESC
+                </button>
+              </div>
+
+              <button
+                onClick={async () => {
+                  setApplyingFilter(true);
+                  try {
+                    await ensureGlobalDataLoaded();
+                    setShowFilterModal(false);
+                  } finally {
+                    setApplyingFilter(false);
+                  }
+                }}
+                disabled={applyingFilter}
+                className="w-full mt-6 py-3 px-4 rounded-xl font-bold bg-[#DC2626] text-white"
+              >
+                {applyingFilter || !globalReady ? 'Applying...' : 'Apply'}
+              </button>
             </motion.div>
           </motion.div>
         )}
@@ -259,7 +321,12 @@ export function PokedexPage() {
             
             {/* Filter Button */}
             <button
-              onClick={() => setShowFilterModal(!showFilterModal)}
+              onClick={() => {
+                setShowFilterModal(!showFilterModal);
+                if (!globalReady) {
+                  void ensureGlobalDataLoaded();
+                }
+              }}
               className="w-12 h-12 bg-gray-900 text-white rounded-xl flex items-center justify-center flex-shrink-0 hover:bg-gray-800 transition-colors"
             >
               <SlidersHorizontal className="w-5 h-5" />
@@ -270,28 +337,11 @@ export function PokedexPage() {
 
       {/* Pokemon List */}
       <div className="px-4 pt-4 pb-24">
-        {GENERATION_RANGES.map(({ gen, name }) => {
-          const pokemonInGen = groupedByGeneration[gen];
-          
-          // Skip empty generations
-          if (!pokemonInGen || pokemonInGen.length === 0) return null;
-          
-          return (
-            <div key={gen} className={gen > 1 ? 'mt-6' : ''}>
-              {/* Generation Header */}
-              <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">
-                {name}
-              </h2>
-              
-              {/* Pokemon Cards with flex and gap for better spacing */}
-              <div className="flex flex-col gap-3">
-                {pokemonInGen.map((pokemon) => (
-                  <PokemonCard key={pokemon.id} pokemon={pokemon} />
-                ))}
-              </div>
-            </div>
-          );
-        })}
+        <div className="flex flex-col gap-3">
+          {filteredAndSortedPokemon.map((pokemon) => (
+            <PokemonCard key={pokemon.id} pokemon={pokemon} />
+          ))}
+        </div>
         
         {/* Infinite Scroll Loader */}
         {hasMore && (

@@ -161,7 +161,7 @@ export function CapturePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-500 via-pink-500 to-red-500 flex flex-col">
+    <div className="min-h-screen pb-20 bg-[linear-gradient(180deg,#73dee3_0%,#b9e4db_35%,#b3e073_58%,#68d7bb_74%,#48ae4e_100%)] flex flex-col">
       <PokedexHeader
         leftButton={
           <button
@@ -173,8 +173,8 @@ export function CapturePage() {
         }
       />
 
-      <div className="flex-1 flex items-center justify-center p-4 -mt-1">
-      <div className="max-w-md w-full">
+      <div className="w-full px-4 pt-4">
+      <div className="max-w-md w-full mx-auto">
         {/* Capture Animation */}
         <AnimatePresence mode="wait">
           {!captureSuccess && captureSuccess !== false && (
@@ -205,18 +205,18 @@ export function CapturePage() {
               </motion.div>
 
               {/* Pokemon Info */}
-              <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-2xl mb-6">
-                <h2 className="text-3xl font-black text-gray-900 capitalize mb-2">
+              <div className="bg-[#f5f3de] border-2 border-[#2d2a43] rounded-3xl p-6 shadow-xl mb-6">
+                <h2 className="text-3xl font-black text-[#1f1e2d] capitalize mb-2">
                   {pokemon.name}
                 </h2>
-                <p className="text-gray-600 mb-4">
+                <p className="text-[#4a5467] mb-4">
                   A wild Pokémon appeared!
                 </p>
 
                 {/* Probability Indicator */}
-                <div className="bg-gray-100 rounded-2xl p-4 mb-4">
+                <div className="bg-white rounded-2xl border border-[#cfd4d9] p-4 mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-bold text-gray-700">
+                    <span className="text-sm font-bold text-[#4a5467]">
                       Capture Rate
                     </span>
                     <span className="text-lg font-black text-green-600">
@@ -225,7 +225,7 @@ export function CapturePage() {
                   </div>
                   <div className="h-2 bg-gray-300 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-gradient-to-r from-green-400 to-green-600"
+                      className="h-full bg-[#4bb860]"
                       style={{ width: `${baseProbability * 100}%` }}
                     />
                   </div>
@@ -239,10 +239,10 @@ export function CapturePage() {
                     className="mb-4"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-bold text-gray-700">
+                      <span className="text-sm font-bold text-[#4a5467]">
                         Timing Meter
                       </span>
-                      <Star className="w-5 h-5 text-purple-600" />
+                      <Star className="w-5 h-5 text-[#DC2626]" />
                     </div>
                     
                     {/* Meter Container */}
@@ -258,12 +258,12 @@ export function CapturePage() {
                       
                       {/* Moving Indicator */}
                       <motion.div
-                        className="absolute top-0 bottom-0 w-2 bg-purple-600"
+                        className="absolute top-0 bottom-0 w-2 bg-[#DC2626]"
                         style={{ left: `${meterValue}%` }}
                       />
                     </div>
                     
-                    <p className="text-xs text-gray-600 mt-2">
+                    <p className="text-xs text-[#4a5467] mt-2">
                       Tap when the line is in the green zone for bonus chance!
                     </p>
                   </motion.div>
@@ -273,7 +273,7 @@ export function CapturePage() {
                 {!capturing && (
                   <button
                     onClick={startCapture}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
+                    className="w-full bg-[#f5f3de] border-2 border-[#2d2a43] text-[#1f1e2d] font-bold py-4 rounded-2xl hover:bg-[#ece8cc] active:scale-95 transition-all"
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Star className="w-5 h-5" />
@@ -286,7 +286,7 @@ export function CapturePage() {
                 {capturing && !captureAttempted && (
                   <button
                     onClick={attemptCapture}
-                    className="w-full bg-gradient-to-r from-red-600 to-orange-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all animate-pulse"
+                    className="w-full bg-[#DC2626] text-white font-bold py-4 rounded-2xl hover:bg-[#B91C1C] active:scale-95 transition-all animate-pulse"
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Sparkles className="w-5 h-5" />
@@ -305,7 +305,7 @@ export function CapturePage() {
                     >
                       🔴
                     </motion.div>
-                    <p className="text-gray-700 font-bold">Capturing...</p>
+                    <p className="text-[#4a5467] font-bold">Capturing...</p>
                   </div>
                 )}
               </div>
@@ -330,7 +330,7 @@ export function CapturePage() {
                 ✨
               </motion.div>
 
-              <div className="bg-white rounded-3xl p-8 shadow-2xl">
+              <div className="bg-[#f5f3de] border-2 border-[#2d2a43] rounded-3xl p-8 shadow-xl">
                 <h2 className="text-4xl font-black text-green-600 mb-4">
                   Captured!
                 </h2>
@@ -342,7 +342,7 @@ export function CapturePage() {
                   style={{ imageRendering: 'pixelated' }}
                 />
 
-                <h3 className="text-2xl font-bold text-gray-900 capitalize mb-2">
+                <h3 className="text-2xl font-bold text-[#1f1e2d] capitalize mb-2">
                   {pokemon.name}
                 </h3>
 
@@ -367,7 +367,7 @@ export function CapturePage() {
 
                 <button
                   onClick={handleContinue}
-                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all"
+                  className="w-full bg-[#f5f3de] border-2 border-[#2d2a43] text-[#1f1e2d] font-bold py-4 rounded-2xl hover:bg-[#ece8cc] transition-all"
                 >
                   Continue
                 </button>
@@ -392,7 +392,7 @@ export function CapturePage() {
                 💔
               </motion.div>
 
-              <div className="bg-white rounded-3xl p-8 shadow-2xl">
+              <div className="bg-[#f5f3de] border-2 border-[#2d2a43] rounded-3xl p-8 shadow-xl">
                 <h2 className="text-4xl font-black text-red-600 mb-4">
                   Escaped!
                 </h2>
@@ -404,17 +404,17 @@ export function CapturePage() {
                   style={{ imageRendering: 'pixelated' }}
                 />
 
-                <h3 className="text-2xl font-bold text-gray-900 capitalize mb-2">
+                <h3 className="text-2xl font-bold text-[#1f1e2d] capitalize mb-2">
                   {pokemon.name}
                 </h3>
 
-                <p className="text-gray-600 mb-6">
+                <p className="text-[#4a5467] mb-6">
                   The Pokémon broke free and escaped!
                 </p>
 
                 <button
                   onClick={handleContinue}
-                  className="w-full bg-gradient-to-r from-gray-500 to-gray-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all"
+                  className="w-full bg-[#f5f3de] border-2 border-[#2d2a43] text-[#1f1e2d] font-bold py-4 rounded-2xl hover:bg-[#ece8cc] transition-all"
                 >
                   Continue
                 </button>

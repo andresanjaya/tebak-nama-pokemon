@@ -165,7 +165,7 @@ export function BattleResultPage() {
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-yellow-400 via-orange-400 to-red-500 flex flex-col">
+    <div className="min-h-screen pb-20 bg-[linear-gradient(180deg,#73dee3_0%,#b9e4db_35%,#b3e073_58%,#68d7bb_74%,#48ae4e_100%)] flex flex-col">
       <PokedexHeader
         leftButton={
           <button
@@ -177,12 +177,12 @@ export function BattleResultPage() {
         }
       />
 
-      <div className="flex-1 flex items-center justify-center p-4 -mt-1">
-      <div className="max-w-md w-full">
+      <div className="w-full px-4 pt-4">
+      <div className="max-w-md w-full mx-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-3xl p-8 shadow-2xl"
+          className="bg-[#f5f3de] border-2 border-[#2d2a43] rounded-3xl p-8 shadow-xl"
         >
           {/* Header */}
           <motion.div
@@ -195,7 +195,7 @@ export function BattleResultPage() {
               {success ? '🎉' : '😢'}
             </div>
             <h1 className={`text-4xl font-black mb-2 ${
-              success ? 'text-green-600' : 'text-gray-600'
+              success ? 'text-green-600' : 'text-[#4a5467]'
             }`}>
               {success ? 'Victory!' : 'Better Luck Next Time'}
             </h1>
@@ -206,9 +206,9 @@ export function BattleResultPage() {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className={`bg-gradient-to-br ${
-              success ? 'from-green-50 to-emerald-50' : 'from-gray-50 to-gray-100'
-            } rounded-2xl p-6 mb-6`}
+            className={`rounded-2xl p-6 mb-6 border ${
+              success ? 'bg-[#dfe9e4] border-[#c2d2cb]' : 'bg-[#ece9df] border-[#d7d2c3]'
+            }`}
           >
             <img
               src={pokemon.image}
@@ -217,7 +217,7 @@ export function BattleResultPage() {
               style={{ imageRendering: 'pixelated' }}
             />
             
-            <h3 className="text-2xl font-bold text-gray-900 capitalize text-center mb-2">
+            <h3 className="text-2xl font-bold text-[#1f1e2d] capitalize text-center mb-2">
               {pokemon.name}
             </h3>
 
@@ -247,7 +247,7 @@ export function BattleResultPage() {
               <span className={`inline-block px-4 py-2 rounded-full font-bold text-sm ${
                 success 
                   ? 'bg-green-500 text-white' 
-                  : 'bg-gray-400 text-white'
+                  : 'bg-[#6f7a8d] text-white'
               }`}>
                 {success ? 'CAPTURED' : 'ESCAPED'}
               </span>
@@ -259,21 +259,21 @@ export function BattleResultPage() {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="bg-gray-50 rounded-2xl p-6 mb-6"
+            className="bg-[#ece9df] border border-[#d7d2c3] rounded-2xl p-6 mb-6"
           >
-            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <h3 className="font-bold text-[#1f1e2d] mb-4 flex items-center gap-2">
               <Trophy className="w-5 h-5 text-yellow-500" />
               Rewards
             </h3>
 
             <div className="space-y-3">
               {/* XP Reward */}
-              <div className="flex items-center justify-between bg-white rounded-xl p-3">
+              <div className="flex items-center justify-between bg-[#f8f7ef] border border-[#d9d4c8] rounded-xl p-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                     <Zap className="w-5 h-5 text-blue-600" />
                   </div>
-                  <span className="font-semibold text-gray-900">Experience Points</span>
+                  <span className="font-semibold text-[#1f1e2d]">Experience Points</span>
                 </div>
                 <span className="font-black text-blue-600 text-lg">
                   +{xpEarned} XP
@@ -281,12 +281,12 @@ export function BattleResultPage() {
               </div>
 
               {levelUps > 0 && (
-                <div className="flex items-center justify-between bg-white rounded-xl p-3">
+                <div className="flex items-center justify-between bg-[#f8f7ef] border border-[#d9d4c8] rounded-xl p-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
                       <Trophy className="w-5 h-5 text-yellow-600" />
                     </div>
-                    <span className="font-semibold text-gray-900">Level Up Reward</span>
+                    <span className="font-semibold text-[#1f1e2d]">Level Up Reward</span>
                   </div>
                   <span className="font-black text-yellow-600 text-lg">
                     +{levelUps} Reward
@@ -300,13 +300,13 @@ export function BattleResultPage() {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.6 }}
-                  className="flex items-center justify-between bg-white rounded-xl p-3"
+                  className="flex items-center justify-between bg-[#f8f7ef] border border-[#d9d4c8] rounded-xl p-3"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                       <Star className="w-5 h-5 text-green-600" />
                     </div>
-                    <span className="font-semibold text-gray-900">New Pokémon</span>
+                    <span className="font-semibold text-[#1f1e2d]">New Pokémon</span>
                   </div>
                   <span className="font-black text-green-600 text-lg capitalize">
                     {pokemon.name}
@@ -316,12 +316,12 @@ export function BattleResultPage() {
 
               {/* Mode Bonus */}
               {mode !== 'normal' && (
-                <div className="flex items-center justify-between bg-white rounded-xl p-3">
+                <div className="flex items-center justify-between bg-[#f8f7ef] border border-[#d9d4c8] rounded-xl p-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
                       <Trophy className="w-5 h-5 text-purple-600" />
                     </div>
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-[#1f1e2d]">
                       {mode === 'boss' ? 'Boss Bonus' : 'Event Bonus'}
                     </span>
                   </div>
@@ -340,7 +340,7 @@ export function BattleResultPage() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.5 }}
               onClick={() => navigate('/game/battle')}
-              className="w-full bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+              className="w-full bg-[#DC2626] text-white font-bold py-4 rounded-2xl hover:bg-[#B91C1C] active:scale-95 transition-all flex items-center justify-center gap-2"
             >
               <RotateCcw className="w-5 h-5" />
               <span>Battle Again</span>
@@ -352,7 +352,7 @@ export function BattleResultPage() {
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.6 }}
                 onClick={() => navigate('/game/battle/collection')}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+                className="w-full bg-[#f5f3de] border-2 border-[#2d2a43] text-[#1f1e2d] font-bold py-4 rounded-2xl hover:bg-[#ece8cc] active:scale-95 transition-all flex items-center justify-center gap-2"
               >
                 <Star className="w-5 h-5" />
                 <span>View Collection</span>
@@ -364,7 +364,7 @@ export function BattleResultPage() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.7 }}
               onClick={() => navigate('/')}
-              className="w-full bg-gray-100 text-gray-900 font-bold py-4 rounded-2xl hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+              className="w-full bg-[#f5f3de] border-2 border-[#2d2a43] text-[#1f1e2d] font-bold py-4 rounded-2xl hover:bg-[#ece8cc] transition-all flex items-center justify-center gap-2"
             >
               <Home className="w-5 h-5" />
               <span>Back to Pokédex</span>
@@ -379,24 +379,24 @@ export function BattleResultPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl"
+            className="bg-[#f5f3de] border-2 border-[#2d2a43] rounded-3xl p-6 max-w-sm w-full shadow-xl"
           >
             <div className="text-center mb-4">
               <div className="text-4xl mb-2">🎁</div>
-              <h2 className="text-2xl font-black text-gray-900">Level Up Reward!</h2>
-              <p className="text-sm text-gray-600">
+              <h2 className="text-2xl font-black text-[#1f1e2d]">Level Up Reward!</h2>
+              <p className="text-sm text-[#4a5467]">
                 Reward {currentRewardIndex + 1} / {levelUpRewards.length}
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-4 mb-4">
+            <div className="bg-[#ece9df] border border-[#d7d2c3] rounded-2xl p-4 mb-4">
               <img
                 src={levelUpRewards[currentRewardIndex].image}
                 alt={levelUpRewards[currentRewardIndex].name}
                 className="w-36 h-36 object-contain mx-auto"
                 style={{ imageRendering: 'pixelated' }}
               />
-              <h3 className="text-xl font-bold text-center capitalize text-gray-900 mt-2">
+              <h3 className="text-xl font-bold text-center capitalize text-[#1f1e2d] mt-2">
                 {levelUpRewards[currentRewardIndex].name}
               </h3>
               <div className="flex justify-center gap-1 mt-2">
@@ -409,13 +409,13 @@ export function BattleResultPage() {
             <div className="space-y-2">
               <button
                 onClick={handleCaptureLevelReward}
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold py-3 rounded-2xl"
+                className="w-full bg-[#DC2626] text-white font-bold py-3 rounded-2xl hover:bg-[#B91C1C]"
               >
                 Capture Reward
               </button>
               <button
                 onClick={handleSkipLevelReward}
-                className="w-full bg-gray-100 text-gray-700 font-bold py-3 rounded-2xl"
+                className="w-full bg-[#f5f3de] border-2 border-[#2d2a43] text-[#1f1e2d] font-bold py-3 rounded-2xl hover:bg-[#ece8cc]"
               >
                 Skip
               </button>
