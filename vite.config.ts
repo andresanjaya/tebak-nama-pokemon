@@ -3,7 +3,12 @@ import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
+const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1]
+const githubPagesBase = repoName ? `/${repoName}/` : '/'
+
 export default defineConfig({
+  // Use repository subpath when building on GitHub Actions for GitHub Pages.
+  base: process.env.GITHUB_ACTIONS ? githubPagesBase : '/',
   plugins: [
     // The React and Tailwind plugins are both required for Make, even if
     // Tailwind is not being actively used – do not remove them

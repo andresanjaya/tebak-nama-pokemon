@@ -24,6 +24,16 @@ function LayoutWrapper({ children, showHeader = true }: { children: ReactElement
   return <Layout showHeader={showHeader}>{children}</Layout>;
 }
 
+function getRouterBasename() {
+  // On GitHub Pages, the app is hosted under /<repo-name>/.
+  if (window.location.hostname.endsWith('github.io')) {
+    const [repoName] = window.location.pathname.split('/').filter(Boolean);
+    return repoName ? `/${repoName}` : '/';
+  }
+
+  return '/';
+}
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -89,4 +99,6 @@ export const router = createBrowserRouter([
     path: '*',
     element: <LayoutWrapper><NotFoundPage /></LayoutWrapper>,
   },
-]);
+], {
+  basename: getRouterBasename(),
+});
