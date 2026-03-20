@@ -245,7 +245,7 @@ export function PokemonSelectionPage() {
               ) : (
                 <div className="text-[#5b6666] text-center">
                   <div className="text-5xl mb-2">+</div>
-                  <p className="text-xs">Tap to scan tag</p>
+                  <p className="text-xs">Tap to choose Pokemon</p>
                 </div>
               )}
             </motion.button>
@@ -298,8 +298,8 @@ export function PokemonSelectionPage() {
               <div className="flex items-start gap-2">
                 <div className="text-2xl">💡</div>
                 <div className="text-left">
-                  <h4 className="font-bold text-yellow-300 text-sm mb-1">First Time?</h4>
-                  <p className="text-yellow-100 text-xs">
+                  <h4 className="font-bold text-dark-300 text-sm mb-1">First Time?</h4>
+                  <p className="text-dark-100 text-xs">
                     Don't have Pokémon yet? Use <strong>"Rent Random Pokémon"</strong> to get 3 starter Pokémon for free! Win battles to catch and build your own collection.
                   </p>
                 </div>
