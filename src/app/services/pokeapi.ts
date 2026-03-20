@@ -1,5 +1,23 @@
 import { Pokemon, PokemonType, Weakness, Evolution } from '../types/pokemon';
 
+export const fetchRandomLegendaryPokemon = async (): Promise<Pokemon> => {
+  const maxAttempts = 40;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const randomId = Math.floor(Math.random() * TOTAL_POKEMON) + 1;
+    try {
+      const pokemon = await fetchPokemonById(randomId);
+      // API species flags are mapped into pokemon.isLegendary.
+      if (pokemon.isLegendary) {
+        return pokemon;
+      }
+    } catch (error) {
+      console.warn(`Legendary roll failed for ID ${randomId}:`, error);
+    }
+  }
+
+  throw new Error('Failed to find legendary/mythical Pokemon using API flags');
+};
 const POKEAPI_BASE_URL = 'https://pokeapi.co/api/v2';
 const SPRITES_BASE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon';
 const TOTAL_POKEMON = 898; // All Pokemon up to Gen 8
@@ -75,6 +93,50 @@ interface PokeAPIResponse {
     url: string;
   };
 }
+
+interface PokeAPIPokemonMoveEntry {
+  move: {
+    name: string;
+    url: string;
+  };
+}
+
+interface PokeAPIPokemonMovesResponse {
+  id: number;
+  moves: PokeAPIPokemonMoveEntry[];
+}
+
+interface PokeAPIMoveResponse {
+  name: string;
+  power: number | null;
+  accuracy: number | null;
+  pp: number | null;
+  type: {
+    name: string;
+  };
+  damage_class: {
+    name: 'physical' | 'special' | 'status';
+  };
+}
+
+interface PokeAPITypeDamageRelationsResponse {
+  damage_relations: {
+    double_damage_to: Array<{ name: string }>;
+    half_damage_to: Array<{ name: string }>;
+    no_damage_to: Array<{ name: string }>;
+  };
+}
+
+export interface BattleMove {
+  name: string;
+  power: number;
+  accuracy: number | null;
+  type: PokemonType;
+  damageClass: 'physical' | 'special';
+}
+
+const moveDetailsCache = new Map<string, BattleMove | null>();
+const typeEffectivenessCache = new Map<PokemonType, Map<PokemonType, number>>();
 
 interface EvolutionChain {
   species: {
@@ -396,4 +458,138 @@ export const calculatePokemonRarity = (pokemon: Pokemon): number => {
   if (totalStats >= 450) return 3; // 3★ - Above Average (Most evolved Pokemon)
   if (totalStats >= 400) return 2; // 2★ - Average (Mid-stage evolutions)
   return 1; // 1★ - Below Average (Basic Pokemon)
+};
+
+const shuffleArray = <T>(items: T[]): T[] => {
+  const shuffled = [...items];
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+const fetchMoveDetails = async (moveUrl: string): Promise<BattleMove | null> => {
+  if (moveDetailsCache.has(moveUrl)) {
+    return moveDetailsCache.get(moveUrl) ?? null;
+  }
+
+  try {
+    const response = await fetchWithRetry(moveUrl);
+    const data: PokeAPIMoveResponse = await response.json();
+
+    if (data.damage_class.name === 'status' || data.power === null || data.power <= 0) {
+      moveDetailsCache.set(moveUrl, null);
+      return null;
+    }
+
+    const mappedType = mapPokemonType(data.type.name);
+    const move: BattleMove = {
+      name: data.name,
+      power: data.power,
+      accuracy: data.accuracy,
+      type: mappedType,
+      damageClass: data.damage_class.name,
+    };
+
+    moveDetailsCache.set(moveUrl, move);
+    return move;
+  } catch (error) {
+    console.warn('Failed to fetch move details from:', moveUrl, error);
+    moveDetailsCache.set(moveUrl, null);
+    return null;
+  }
+};
+
+export const fetchPokemonBattleMoves = async (
+  pokemonId: number,
+  pokemonTypes: PokemonType[],
+  desiredCount: number = 4
+): Promise<BattleMove[]> => {
+  const response = await fetchWithRetry(`${POKEAPI_BASE_URL}/pokemon/${pokemonId}`);
+  const data: PokeAPIPokemonMovesResponse = await response.json();
+
+  const randomizedMoves = shuffleArray(data.moves);
+  const results: BattleMove[] = [];
+
+  // Keep requests bounded while still finding a good set of valid typed moves.
+  const maxAttempts = Math.min(40, randomizedMoves.length);
+  for (let i = 0; i < maxAttempts && results.length < desiredCount; i += 1) {
+    const entry = randomizedMoves[i];
+    const move = await fetchMoveDetails(entry.move.url);
+    if (!move) {
+      continue;
+    }
+
+    const isSameTypeMove = pokemonTypes.includes(move.type);
+    if (!isSameTypeMove) {
+      continue;
+    }
+
+    if (!results.some((existing) => existing.name === move.name)) {
+      results.push(move);
+    }
+  }
+
+  // Graceful fallback if no same-type damaging moves are available.
+  if (results.length === 0) {
+    for (let i = 0; i < maxAttempts && results.length < desiredCount; i += 1) {
+      const entry = randomizedMoves[i];
+      const move = await fetchMoveDetails(entry.move.url);
+      if (!move) {
+        continue;
+      }
+      if (!results.some((existing) => existing.name === move.name)) {
+        results.push(move);
+      }
+    }
+  }
+
+  return results;
+};
+
+const getAttackTypeEffectivenessMap = async (
+  attackType: PokemonType
+): Promise<Map<PokemonType, number>> => {
+  const cached = typeEffectivenessCache.get(attackType);
+  if (cached) {
+    return cached;
+  }
+
+  const response = await fetchWithRetry(`${POKEAPI_BASE_URL}/type/${attackType}`);
+  const data: PokeAPITypeDamageRelationsResponse = await response.json();
+
+  const multiplierMap = new Map<PokemonType, number>();
+  (Object.keys(typeWeaknesses) as PokemonType[]).forEach((type) => {
+    multiplierMap.set(type, 1);
+  });
+
+  data.damage_relations.double_damage_to.forEach((entry) => {
+    const targetType = mapPokemonType(entry.name);
+    multiplierMap.set(targetType, (multiplierMap.get(targetType) || 1) * 2);
+  });
+
+  data.damage_relations.half_damage_to.forEach((entry) => {
+    const targetType = mapPokemonType(entry.name);
+    multiplierMap.set(targetType, (multiplierMap.get(targetType) || 1) * 0.5);
+  });
+
+  data.damage_relations.no_damage_to.forEach((entry) => {
+    const targetType = mapPokemonType(entry.name);
+    multiplierMap.set(targetType, 0);
+  });
+
+  typeEffectivenessCache.set(attackType, multiplierMap);
+  return multiplierMap;
+};
+
+export const getTypeEffectivenessMultiplier = async (
+  attackType: PokemonType,
+  defenderTypes: PokemonType[]
+): Promise<number> => {
+  const map = await getAttackTypeEffectivenessMap(attackType);
+  return defenderTypes.reduce((multiplier, defenderType) => {
+    const value = map.get(defenderType) ?? 1;
+    return multiplier * value;
+  }, 1);
 };

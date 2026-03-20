@@ -2,12 +2,13 @@ import { useNavigate } from 'react-router';
 import { PokedexHeader } from '../components/PokedexHeader';
 import { ArrowLeft, Zap, Crown, Star, TrendingUp, Trophy } from 'lucide-react';
 import { motion } from 'motion/react';
+import { getXpRequiredForNextLevel } from '../utils/playerProgress';
 
 export function BattleModeSelectPage() {
   const navigate = useNavigate();
   const playerLevel = parseInt(localStorage.getItem('playerLevel') || '1');
   const playerXP = parseInt(localStorage.getItem('playerXP') || '0');
-  const xpNeeded = playerLevel * 1000;
+  const xpNeeded = getXpRequiredForNextLevel(playerLevel);
   const xpProgress = (playerXP / xpNeeded) * 100;
   const capturedCount = parseInt(localStorage.getItem('capturedCount') || '0');
 
@@ -32,7 +33,7 @@ export function BattleModeSelectPage() {
       icon: Crown,
       color: 'from-red-500 to-rose-600',
       rewards: ['Rare Pokémon', '200-300 XP', 'Premium Items'],
-      minLevel: 5,
+      minLevel: 1,
     },
     {
       id: 'event',
@@ -43,7 +44,7 @@ export function BattleModeSelectPage() {
       icon: Star,
       color: 'from-purple-500 to-pink-600',
       rewards: ['Event Pokémon', '150-250 XP', 'Event Rewards'],
-      minLevel: 3,
+      minLevel: 1,
       badge: 'LIMITED',
     },
   ];

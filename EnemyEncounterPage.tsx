@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion } from 'motion/react';
 import { Zap, Swords } from 'lucide-react';
-import { Pokemon } from '../types/pokemon';
-import { fetchPokemonById, fetchRandomLegendaryPokemon } from '../services/pokeapi';
+import { Pokemon } from '../types/pokemon';nimport { fetchRandomLegendaryPokemon } from '../services/pokeapi';
 
 interface CapturedPokemon extends Pokemon {
   rarity: number;
@@ -47,7 +46,7 @@ export function EnemyEncounterPage() {
     
     // Check if we have the required state
     if (!teamData || teamData.length === 0) {
-      console.error('❌ No team provided to EnemyEncounterPage');
+      console.error('âŒ No team provided to EnemyEncounterPage');
       console.error('Location state:', location.state);
       console.error('SessionStorage battleTeam:', sessionStorage.getItem('battleTeam'));
       console.error('Redirecting back to battle select...');
@@ -63,36 +62,31 @@ export function EnemyEncounterPage() {
     setTeam(teamData);
     setMode(modeData || 'normal');
 
-    console.log('✅ Team validated, fetching enemy...');
+    console.log('âœ… Team validated, fetching enemy...');
 
     // Fetch random enemy Pokemon
     const fetchEnemy = async () => {
       try {
-        let enemyPokemon: Pokemon;
+        const randomId = Math.floor(Math.random() * 898) + 1; // All gens!
+        console.log('Fetching enemy Pokemon with ID:', randomId);
+        
+        const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${randomId}`);
+        const data = await response.json();
 
-        if (modeData === 'boss') {
-          console.log('Boss mode: fetching only API-flagged legendary/mythical enemy');
-          enemyPokemon = await fetchRandomLegendaryPokemon();
+        const enemyPokemon: Pokemon = {
+          id: data.id,
+          name: data.name,
+          image: data.sprites.other['official-artwork'].front_default || data.sprites.front_default,
+          types: data.types.map((t: any) => t.type.name),
+          stats: {
+            hp: data.stats[0].base_stat,
+            attack: data.stats[1].base_stat,
+            defense: data.stats[2].base_stat,
+            speed: data.stats[5].base_stat,
+          },
+        };
 
-          // Make boss fights harder with stronger stats.
-          enemyPokemon = {
-            ...enemyPokemon,
-            stats: {
-              ...enemyPokemon.stats,
-              hp: Math.floor(enemyPokemon.stats.hp * 1.5),
-              attack: Math.floor(enemyPokemon.stats.attack * 1.2),
-              defense: Math.floor(enemyPokemon.stats.defense * 1.2),
-              specialAttack: Math.floor(enemyPokemon.stats.specialAttack * 1.2),
-              specialDefense: Math.floor(enemyPokemon.stats.specialDefense * 1.2),
-              speed: Math.floor(enemyPokemon.stats.speed * 1),
-            },
-          };
-        } else {
-          const randomId = Math.floor(Math.random() * 898) + 1;
-          enemyPokemon = await fetchPokemonById(randomId);
-        }
-
-        console.log('✅ Enemy Pokemon fetched:', enemyPokemon.name);
+        console.log('âœ… Enemy Pokemon fetched:', enemyPokemon.name);
         setEnemy(enemyPokemon);
         
         // Show VS after delay
@@ -155,7 +149,7 @@ export function EnemyEncounterPage() {
             className="text-5xl font-black text-white mb-2"
             style={{ textShadow: '0 0 20px rgba(255,255,255,0.5)' }}
           >
-            WILD POKÉMON
+            WILD POKÃ‰MON
           </motion.h1>
           <motion.h2
             initial={{ scale: 0 }}
@@ -179,7 +173,7 @@ export function EnemyEncounterPage() {
           >
             <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl p-6 shadow-2xl border-4 border-white/30">
               <div className="text-center mb-3">
-                <p className="text-white/80 text-sm font-bold mb-1">YOUR POKÉMON</p>
+                <p className="text-white/80 text-sm font-bold mb-1">YOUR POKÃ‰MON</p>
                 <h3 className="text-2xl font-black text-white capitalize">
                   {playerPokemon?.name}
                 </h3>
@@ -231,7 +225,7 @@ export function EnemyEncounterPage() {
           >
             <div className="bg-gradient-to-br from-red-500 to-pink-500 rounded-3xl p-6 shadow-2xl border-4 border-white/30">
               <div className="text-center mb-3">
-                <p className="text-white/80 text-sm font-bold mb-1">ENEMY POKÉMON</p>
+                <p className="text-white/80 text-sm font-bold mb-1">ENEMY POKÃ‰MON</p>
                 <h3 className="text-2xl font-black text-white capitalize">
                   {enemy?.name || '???'}
                 </h3>

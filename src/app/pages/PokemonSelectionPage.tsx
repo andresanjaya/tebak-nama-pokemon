@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star, Zap, Shield, ChevronRight, Shuffle, Gift, ArrowLeft } from 'lucide-react';
+import { Star, Zap, Shield, ChevronRight, Shuffle, Gift, ArrowLeft, Heart } from 'lucide-react';
 import { Pokemon } from '../types/pokemon';
 import { fetchPokemonById, calculatePokemonRarity } from '../services/pokeapi';
+import { PokedexHeader } from '../components/PokedexHeader';
 
 interface CapturedPokemon extends Pokemon {
   rarity: number;
@@ -149,26 +150,27 @@ export function PokemonSelectionPage() {
   const canStart = selectedSlots.some(slot => slot !== null);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-600 via-purple-600 to-pink-600 p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Back Button */}
-        <motion.button
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          onClick={() => navigate('/game/battle')}
-          className="mb-4 w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center hover:bg-white/30 transition-all"
-        >
-          <ArrowLeft className="w-6 h-6 text-white" />
-        </motion.button>
+    <div className="min-h-screen bg-gradient-to-b from-indigo-600 via-purple-600 to-pink-600 pb-20">
+      <PokedexHeader
+        leftButton={
+          <button
+            onClick={() => navigate('/game/battle')}
+            className="w-14 h-14 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+          >
+            <ArrowLeft className="w-6 h-6 text-gray-800" />
+          </button>
+        }
+      />
 
+      <div className="max-w-4xl mx-auto p-4">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="text-4xl font-black text-white mb-2">
-            SELECT YOUR TAG
+          <h1 className="text-2xl mt-3 font-black text-white mb-2">
+            SELECT YOUR POKEMON
           </h1>
           <p className="text-white/80">
             Choose up to 3 Pokémon for battle

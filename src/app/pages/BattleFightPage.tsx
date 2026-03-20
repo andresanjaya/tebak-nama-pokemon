@@ -1,26 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, Zap, Sparkles, RefreshCw } from 'lucide-react';
+import { Zap, RefreshCw, ArrowLeft } from 'lucide-react';
 import { Pokemon } from '../types/pokemon';
+import { PokedexHeader } from '../components/PokedexHeader';
+import {
+  BattleMove,
+  fetchPokemonBattleMoves,
+  getTypeEffectivenessMultiplier,
+} from '../services/pokeapi';
 
 interface CapturedPokemon extends Pokemon {
   rarity: number;
   capturedAt: string;
   mode: string;
 }
-
-// Roulette segments with damage values
-const ROULETTE_SEGMENTS = [
-  { value: 10, color: '#3B82F6', label: '10' },  // Blue
-  { value: 20, color: '#10B981', label: '20' },  // Green
-  { value: 30, color: '#F59E0B', label: '30' },  // Orange
-  { value: 40, color: '#EF4444', label: '40' },  // Red
-  { value: 50, color: '#8B5CF6', label: '50' },  // Purple
-  { value: 10, color: '#3B82F6', label: '10' },  // Blue
-  { value: 20, color: '#10B981', label: '20' },  // Green
-  { value: 30, color: '#F59E0B', label: '30' },  // Orange
-];
 
 export function BattleFightPage() {
   const navigate = useNavigate();
@@ -36,17 +30,16 @@ export function BattleFightPage() {
   // State that depends on team/enemy - initialized with fallback values
   const [playerHP, setPlayerHP] = useState(100);
   const [enemyHP, setEnemyHP] = useState(300);
-  const [battlePhase, setBattlePhase] = useState<'player-turn' | 'enemy-turn' | 'roulette' | 'switching' | 'complete'>('player-turn');
-  
-  // Roulette State
-  const [rouletteRotation, setRouletteRotation] = useState(0);
-  const [isSpinning, setIsSpinning] = useState(false);
-  const [selectedSegment, setSelectedSegment] = useState<number | null>(null);
+  const [battlePhase, setBattlePhase] = useState<'player-turn' | 'enemy-turn' | 'complete'>('player-turn');
 
   const [showDamage, setShowDamage] = useState<{ target: 'player' | 'enemy'; amount: number; type: string } | null>(null);
   const [turnCount, setTurnCount] = useState(0);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
   const [firstAttackApplied, setFirstAttackApplied] = useState(false);
+  const [currentMoveLabel, setCurrentMoveLabel] = useState<string | null>(null);
+  const [playerMoves, setPlayerMoves] = useState<BattleMove[]>([]);
+  const [enemyMoves, setEnemyMoves] = useState<BattleMove[]>([]);
+  const [loadingMoves, setLoadingMoves] = useState(false);
 
   // Define all functions BEFORE any useEffect that uses them
   const dealDamage = useCallback((target: 'player' | 'enemy', amount: number, type: string) => {
@@ -93,15 +86,65 @@ export function BattleFightPage() {
     }
   }, [team, enemy, mode, currentPokemonIndex, navigate]);
 
-  const performEnemyAttack = useCallback(() => {
-    const damage = Math.floor(Math.random() * 15) + 10;
-    dealDamage('player', damage, 'Enemy Attack!');
-    
+  const calculateMoveDamage = useCallback(async (
+    attacker: Pokemon,
+    defender: Pokemon,
+    move: BattleMove
+  ) => {
+    const isPhysical = move.damageClass === 'physical';
+    const attackStat = isPhysical ? (attacker.stats?.attack ?? 50) : (attacker.stats?.specialAttack ?? 50);
+    const defenseStat = isPhysical ? (defender.stats?.defense ?? 50) : (defender.stats?.specialDefense ?? 50);
+    const hp = attacker.stats?.hp ?? 50;
+    const attack = attacker.stats?.attack ?? 50;
+    const speed = attacker.stats?.speed ?? 50;
+    const attackerLevel = Math.max(30, Math.floor((hp + attack + speed) / 6));
+    const stab = (attacker.types ?? []).includes(move.type) ? 1.5 : 1;
+    const effectiveness = await getTypeEffectivenessMultiplier(move.type, defender.types ?? ['normal']);
+    const randomFactor = 0.85 + Math.random() * 0.15;
+
+    const base = (((2 * attackerLevel) / 5 + 2) * (move.power ?? 50) * (attackStat / Math.max(1, defenseStat))) / 50 + 2;
+    const rawDamage = Math.floor(base * stab * effectiveness * randomFactor);
+    const damage = Math.max(1, rawDamage);
+
+    let effectivenessText = 'Normal hit';
+    if (effectiveness === 0) {
+      effectivenessText = 'No effect';
+    } else if (effectiveness > 1) {
+      effectivenessText = 'Super effective';
+    } else if (effectiveness < 1) {
+      effectivenessText = 'Not very effective';
+    }
+
+    return {
+      damage,
+      effectivenessText,
+    };
+  }, []);
+
+  const performEnemyAttack = useCallback(async () => {
+    if (!team || !enemy || enemyMoves.length === 0) {
+      setBattlePhase('player-turn');
+      return;
+    }
+
+    const attacker = team[currentPokemonIndex];
+    if (!attacker) {
+      setBattlePhase('player-turn');
+      return;
+    }
+
+    const move = enemyMoves[Math.floor(Math.random() * enemyMoves.length)];
+    const { damage, effectivenessText } = await calculateMoveDamage(enemy, attacker, move);
+
+    setCurrentMoveLabel(`${enemy.name} used ${move.name.replace(/-/g, ' ')}`);
+    dealDamage('player', damage, `${effectivenessText}!`);
+
     setTimeout(() => {
       setBattlePhase('player-turn');
       setTurnCount(prev => prev + 1);
+      setCurrentMoveLabel(null);
     }, 2000);
-  }, [dealDamage]);
+  }, [team, currentPokemonIndex, enemy, enemyMoves, calculateMoveDamage, dealDamage]);
 
   // Initialize state from location or sessionStorage
   useEffect(() => {
@@ -154,17 +197,6 @@ export function BattleFightPage() {
     setEnemyHP(initialMaxEnemyHP);
   }, [location, navigate]);
 
-  // Roulette auto-spin animation
-  useEffect(() => {
-    if (battlePhase === 'roulette' && isSpinning) {
-      const interval = setInterval(() => {
-        setRouletteRotation(prev => (prev + 8) % 360);
-      }, 16);
-
-      return () => clearInterval(interval);
-    }
-  }, [battlePhase, isSpinning]);
-
   // Enemy Turn
   useEffect(() => {
     if (battlePhase === 'enemy-turn' && enemyHP > 0 && team && enemy) {
@@ -175,18 +207,73 @@ export function BattleFightPage() {
     }
   }, [battlePhase, enemyHP, team, enemy, performEnemyAttack]);
 
+  // Load battle moves for current player Pokemon and enemy.
+  useEffect(() => {
+    if (!team || !enemy) {
+      return;
+    }
+
+    const currentPokemon = team[currentPokemonIndex];
+    if (!currentPokemon) {
+      return;
+    }
+
+    let isCancelled = false;
+    const loadMoves = async () => {
+      setLoadingMoves(true);
+      try {
+        const [loadedPlayerMoves, loadedEnemyMoves] = await Promise.all([
+          fetchPokemonBattleMoves(currentPokemon.id, currentPokemon.types),
+          fetchPokemonBattleMoves(enemy.id, enemy.types),
+        ]);
+
+        if (!isCancelled) {
+          setPlayerMoves(loadedPlayerMoves);
+          setEnemyMoves(loadedEnemyMoves);
+        }
+      } catch (error) {
+        console.error('Failed to load battle moves:', error);
+        if (!isCancelled) {
+          setPlayerMoves([]);
+          setEnemyMoves([]);
+        }
+      } finally {
+        if (!isCancelled) {
+          setLoadingMoves(false);
+        }
+      }
+    };
+
+    loadMoves();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [team, currentPokemonIndex, enemy]);
+
   // First attack bonus
   useEffect(() => {
-    if (firstAttackBonus && team && enemy && !firstAttackApplied && team.length > 0) {
+    if (firstAttackBonus && team && enemy && !firstAttackApplied && team.length > 0 && playerMoves.length > 0) {
       // Player gets first free hit
-      const timer = setTimeout(() => {
-        const damage = 15;
-        dealDamage('enemy', damage, 'First Attack Bonus!');
+      const attacker = team[currentPokemonIndex];
+      if (!attacker) {
+        return;
+      }
+
+      const timer = setTimeout(async () => {
+        const move = playerMoves[Math.floor(Math.random() * playerMoves.length)];
+        const { damage, effectivenessText } = await calculateMoveDamage(attacker, enemy, move);
+        const boostedDamage = Math.max(1, Math.floor(damage * 1.2));
+        setCurrentMoveLabel(`${attacker.name} used ${move.name.replace(/-/g, ' ')} (First Attack Bonus)`);
+        dealDamage('enemy', boostedDamage, `${effectivenessText}!`);
         setFirstAttackApplied(true);
+        setTimeout(() => {
+          setCurrentMoveLabel(null);
+        }, 1200);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [firstAttackBonus, team, enemy, firstAttackApplied, dealDamage]);
+  }, [firstAttackBonus, team, currentPokemonIndex, enemy, firstAttackApplied, playerMoves, calculateMoveDamage, dealDamage]);
 
   // Return early only AFTER all hooks
   if (!team || !enemy) {
@@ -198,50 +285,44 @@ export function BattleFightPage() {
   const maxPlayerHP = currentPokemon?.stats?.hp || 100;
   const maxEnemyHP = (enemy?.stats?.hp || 100) * 3; // 3x HP for 3 vs 1
 
-  const handleAttackClick = () => {
-    if (battlePhase !== 'player-turn') return;
-    
-    setBattlePhase('roulette');
-    setIsSpinning(true);
-    setSelectedSegment(null);
-  };
+  const handleAttackClick = async () => {
+    if (battlePhase !== 'player-turn' || loadingMoves || playerMoves.length === 0) {
+      return;
+    }
 
-  const handleRouletteStop = () => {
-    if (!isSpinning) return;
-    
-    setIsSpinning(false);
-    
-    // Calculate which segment was selected based on rotation
-    const segmentAngle = 360 / ROULETTE_SEGMENTS.length;
-    const normalizedRotation = ((360 - (rouletteRotation % 360)) + segmentAngle / 2) % 360;
-    const segmentIndex = Math.floor(normalizedRotation / segmentAngle) % ROULETTE_SEGMENTS.length;
-    
-    setSelectedSegment(segmentIndex);
-    
-    const selectedValue = ROULETTE_SEGMENTS[segmentIndex].value;
-    
-    console.log('Roulette stopped at segment:', segmentIndex, 'Value:', selectedValue);
-    
-    // Deal damage after showing result
+    const move = playerMoves[Math.floor(Math.random() * playerMoves.length)];
+    const { damage, effectivenessText } = await calculateMoveDamage(currentPokemon, enemy, move);
+
+    setCurrentMoveLabel(`${currentPokemon.name} used ${move.name.replace(/-/g, ' ')}`);
+    dealDamage('enemy', damage, `${effectivenessText}!`);
+
     setTimeout(() => {
-      dealDamage('enemy', selectedValue, `${selectedValue} Damage!`);
-      
-      // Transition to enemy turn
-      setTimeout(() => {
-        if (enemyHP - selectedValue > 0) {
-          setBattlePhase('enemy-turn');
-        }
-        setSelectedSegment(null);
-      }, 1500);
-    }, 1000);
+      if (enemyHP - damage > 0) {
+        setBattlePhase('enemy-turn');
+      }
+      setCurrentMoveLabel(null);
+    }, 1500);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-indigo-900 to-black flex flex-col p-4">
-      {/* Battle Info Header */}
-      <div className="flex justify-between items-start mb-4">
-        {/* Player Pokemon */}
-        <div className="flex-1">
+    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-indigo-900 to-black flex flex-col">
+      {/* Pokedex Header */}
+      <PokedexHeader
+        leftButton={
+          <button
+            onClick={() => navigate('/game/battle')}
+            className="w-14 h-14 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+          >
+            <ArrowLeft className="w-6 h-6 text-gray-800" />
+          </button>
+        }
+      />
+
+      {/* Battle Content */}
+      <div className="flex flex-col p-4">
+        <div className="flex justify-between items-start mb-6 gap-4">
+          {/* Player Pokemon */}
+          <div className="flex-1 pr-2">
           <motion.div
             initial={{ x: -100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -274,7 +355,7 @@ export function BattleFightPage() {
         </div>
 
         {/* Enemy Pokemon */}
-        <div className="flex-1">
+        <div className="flex-1 pl-2">
           <motion.div
             initial={{ x: 100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -308,25 +389,25 @@ export function BattleFightPage() {
       </div>
 
       {/* Battle Scene */}
-      <div className="flex-1 flex items-center justify-center relative">
+      <div className="relative flex-1 min-h-[180px] sm:min-h-[220px] mb-4">
         {/* Pokemon Images */}
-        <div className="absolute inset-0 flex items-center justify-between px-8">
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-between px-4 sm:px-10">
           {/* Player Pokemon */}
           <motion.div
             animate={{ 
-              y: battlePhase === 'player-turn' || battlePhase === 'roulette' ? [0, -10, 0] : 0,
+              y: battlePhase === 'player-turn' ? [0, -10, 0] : 0,
               scale: showDamage?.target === 'player' ? 0.9 : 1
             }}
             transition={{ 
               y: { repeat: Infinity, duration: 1.5 },
               scale: { duration: 0.2 }
             }}
-            className="relative"
+            className="relative w-[42%] flex justify-start"
           >
             <img
               src={currentPokemon.image}
               alt={currentPokemon.name}
-              className="w-32 h-32 object-contain drop-shadow-2xl"
+              className="w-24 h-24 sm:w-32 sm:h-32 object-contain drop-shadow-2xl"
               style={{ imageRendering: 'pixelated' }}
             />
           </motion.div>
@@ -341,12 +422,12 @@ export function BattleFightPage() {
               y: { repeat: Infinity, duration: 1.5 },
               scale: { duration: 0.2 }
             }}
-            className="relative"
+            className="relative w-[42%] flex justify-end"
           >
             <img
               src={enemy.image}
               alt={enemy.name}
-              className="w-32 h-32 object-contain drop-shadow-2xl"
+              className="w-24 h-24 sm:w-32 sm:h-32 object-contain drop-shadow-2xl"
               style={{ imageRendering: 'pixelated' }}
             />
           </motion.div>
@@ -361,7 +442,7 @@ export function BattleFightPage() {
               exit={{ opacity: 0, scale: 0.5 }}
               className={`absolute ${
                 showDamage.target === 'enemy' ? 'right-1/4' : 'left-1/4'
-              } top-1/3 z-10`}
+              } top-8 z-10`}
             >
               <div className="text-5xl font-black text-yellow-400 drop-shadow-lg" style={{ textShadow: '0 0 20px rgba(250,204,21,0.8), 0 4px 0 #000' }}>
                 -{showDamage.amount}
@@ -374,139 +455,30 @@ export function BattleFightPage() {
         </AnimatePresence>
       </div>
 
-      {/* Roulette Wheel */}
-      {battlePhase === 'roulette' && (
+      {currentMoveLabel && (
         <motion.div
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 text-center text-white font-bold text-lg"
         >
-          <div className="relative flex flex-col items-center">
-            {/* Instruction */}
-            <motion.div
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ repeat: Infinity, duration: 1 }}
-              className="text-white font-bold mb-4 text-lg"
-            >
-              {isSpinning ? '🎯 TAP TO STOP!' : 'Tap SMASH to spin!'}
-            </motion.div>
-
-            {/* Roulette Container */}
-            <div className="relative w-80 h-80">
-              {/* Pointer/Indicator */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-3 z-20">
-                <div className="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-[30px] border-t-yellow-400 drop-shadow-lg" 
-                  style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.5))' }}
-                />
-              </div>
-
-              {/* Roulette Wheel */}
-              <div className="relative w-full h-full">
-                <motion.div
-                  animate={{ rotate: rouletteRotation }}
-                  transition={{ duration: 0, ease: 'linear' }}
-                  className="absolute inset-0"
-                  style={{ transformOrigin: 'center' }}
-                >
-                  <svg viewBox="0 0 400 400" className="w-full h-full">
-                    {/* Outer ring border */}
-                    <circle cx="200" cy="200" r="195" fill="none" stroke="#ffffff" strokeWidth="6" />
-                    
-                    {ROULETTE_SEGMENTS.map((segment, index) => {
-                      const segmentAngle = 360 / ROULETTE_SEGMENTS.length;
-                      const startAngle = index * segmentAngle - 90; // Start from top
-                      const endAngle = startAngle + segmentAngle;
-                      
-                      const startRad = (startAngle * Math.PI) / 180;
-                      const endRad = (endAngle * Math.PI) / 180;
-                      
-                      const outerRadius = 190;
-                      const innerRadius = 60;
-                      
-                      // Outer arc points
-                      const x1 = 200 + outerRadius * Math.cos(startRad);
-                      const y1 = 200 + outerRadius * Math.sin(startRad);
-                      const x2 = 200 + outerRadius * Math.cos(endRad);
-                      const y2 = 200 + outerRadius * Math.sin(endRad);
-                      
-                      // Inner arc points
-                      const x3 = 200 + innerRadius * Math.cos(endRad);
-                      const y3 = 200 + innerRadius * Math.sin(endRad);
-                      const x4 = 200 + innerRadius * Math.cos(startRad);
-                      const y4 = 200 + innerRadius * Math.sin(startRad);
-                      
-                      const isSelected = selectedSegment === index;
-                      
-                      // Text position (middle of segment)
-                      const midAngle = (startAngle + endAngle) / 2;
-                      const midRad = (midAngle * Math.PI) / 180;
-                      const textRadius = (outerRadius + innerRadius) / 2;
-                      const textX = 200 + textRadius * Math.cos(midRad);
-                      const textY = 200 + textRadius * Math.sin(midRad);
-                      
-                      return (
-                        <g key={index}>
-                          {/* Segment path */}
-                          <path
-                            d={`M ${x1} ${y1} A ${outerRadius} ${outerRadius} 0 0 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 0 0 ${x4} ${y4} Z`}
-                            fill={isSelected ? '#FFD700' : segment.color}
-                            stroke="#ffffff"
-                            strokeWidth="4"
-                            style={{
-                              filter: isSelected ? 'drop-shadow(0 0 15px rgba(255,215,0,0.9))' : 'none'
-                            }}
-                          />
-                          
-                          {/* Segment value text */}
-                          <text
-                            x={textX}
-                            y={textY}
-                            fill="white"
-                            fontSize="40"
-                            fontWeight="900"
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            style={{ 
-                              textShadow: '0 3px 6px rgba(0,0,0,0.9)',
-                              paintOrder: 'stroke',
-                              stroke: '#000',
-                              strokeWidth: '3px'
-                            }}
-                          >
-                            {segment.label}
-                          </text>
-                        </g>
-                      );
-                    })}
-                    
-                    {/* Inner circle border */}
-                    <circle cx="200" cy="200" r="65" fill="none" stroke="#ffffff" strokeWidth="6" />
-                  </svg>
-                </motion.div>
-
-                {/* Center Circle */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center z-10">
-                  <Sparkles className="w-10 h-10 text-white" />
-                </div>
-              </div>
-            </div>
-          </div>
+          {currentMoveLabel}
         </motion.div>
       )}
 
       {/* Action Buttons */}
-      <div className="space-y-3">
+      <div className="space-y-3 mt-4 pb-1">
         {battlePhase === 'player-turn' && (
           <>
             <motion.button
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               onClick={handleAttackClick}
+              disabled={loadingMoves || playerMoves.length === 0}
               className="w-full bg-gradient-to-r from-red-500 to-orange-500 text-white font-black text-2xl py-6 rounded-2xl shadow-lg hover:shadow-2xl active:scale-95 transition-all border-4 border-white/30"
             >
               <div className="flex items-center justify-center gap-3">
                 <Zap className="w-8 h-8" />
-                <span>ATTACK!</span>
+                <span>{loadingMoves ? 'Loading Moves...' : 'ATTACK!'}</span>
               </div>
             </motion.button>
 
@@ -526,25 +498,6 @@ export function BattleFightPage() {
               </motion.button>
             )}
           </>
-        )}
-
-        {battlePhase === 'roulette' && (
-          <motion.button
-            animate={{ 
-              scale: isSpinning ? [1, 1.05, 1] : 1,
-              boxShadow: isSpinning 
-                ? ['0 0 20px rgba(250,204,21,0.5)', '0 0 40px rgba(250,204,21,0.8)', '0 0 20px rgba(250,204,21,0.5)']
-                : '0 10px 25px rgba(0,0,0,0.3)'
-            }}
-            transition={{ 
-              scale: { repeat: Infinity, duration: 0.5 },
-              boxShadow: { repeat: Infinity, duration: 1 }
-            }}
-            onClick={isSpinning ? handleRouletteStop : handleAttackClick}
-            className="w-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white font-black text-3xl py-8 rounded-2xl shadow-2xl active:scale-95 transition-all border-4 border-white"
-          >
-            {isSpinning ? '🎯 SMASH!' : '🔄 SPIN'}
-          </motion.button>
         )}
 
         {battlePhase === 'enemy-turn' && (
@@ -647,6 +600,7 @@ export function BattleFightPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }

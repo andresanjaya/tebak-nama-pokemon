@@ -55,14 +55,7 @@ export function GameMenuPage() {
               className="w-full bg-white rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all relative overflow-hidden group"
             >
               {/* Gradient Background */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${game.color} opacity-0 group-hover:opacity-10 transition-opacity`} />
-
-              {/* Badge */}
-              {game.badge && (
-                <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  {game.badge}
-                </div>
-              )}
+              <div className={`absolute inset-0 bg-gradient-to-br ${game.color} opacity-0 group-hover:opacity-10 transition-opacity`} /> 
 
               {/* Content */}
               <div className="relative z-10 flex items-start gap-4">
