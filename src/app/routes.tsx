@@ -25,13 +25,10 @@ function LayoutWrapper({ children, showHeader = true }: { children: ReactElement
 }
 
 function getRouterBasename() {
-  // On GitHub Pages, the app is hosted under /<repo-name>/.
-  if (window.location.hostname.endsWith('github.io')) {
-    const [repoName] = window.location.pathname.split('/').filter(Boolean);
-    return repoName ? `/${repoName}` : '/';
-  }
-
-  return '/';
+  const baseUrl = import.meta.env.BASE_URL || '/';
+  return baseUrl.endsWith('/') && baseUrl !== '/'
+    ? baseUrl.slice(0, -1)
+    : baseUrl;
 }
 
 export const router = createBrowserRouter([

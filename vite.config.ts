@@ -3,7 +3,7 @@ import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
-const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1]
+const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1]?.toLowerCase()
 const githubPagesBase = repoName ? `/${repoName}/` : '/'
 
 export default defineConfig({
