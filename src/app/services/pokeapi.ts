@@ -18,6 +18,25 @@ export const fetchRandomLegendaryPokemon = async (): Promise<Pokemon> => {
 
   throw new Error('Failed to find legendary/mythical Pokemon using API flags');
 };
+
+const EVENT_SHINY_IDS = [
+  6, 59, 94, 130, 143, 149, 196, 248, 282, 373, 448, 635, 700,
+];
+
+const pickRandomFrom = <T>(list: T[]): T => {
+  return list[Math.floor(Math.random() * list.length)];
+};
+
+export const fetchRandomEventPokemon = async (): Promise<Pokemon> => {
+  const id = pickRandomFrom(EVENT_SHINY_IDS);
+  const pokemon = await fetchPokemonById(id);
+  return {
+    ...pokemon,
+    name: `Shiny ${pokemon.name}`,
+    image: `${SPRITES_BASE_URL}/shiny/${pokemon.id}.png`,
+  };
+};
+
 const POKEAPI_BASE_URL = 'https://pokeapi.co/api/v2';
 const SPRITES_BASE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon';
 const TOTAL_POKEMON = 898; // All Pokemon up to Gen 8
@@ -371,6 +390,7 @@ export const fetchPokemonById = async (id: number): Promise<Pokemon> => {
       description,
       image: getPokemonSpriteUrl(data.id),
       isLegendary: speciesData.is_legendary || speciesData.is_mythical,
+      isMythical: speciesData.is_mythical,
       evolution,
       weight: data.weight,
       height: data.height,

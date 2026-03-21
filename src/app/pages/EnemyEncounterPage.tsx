@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router';
 import { motion } from 'motion/react';
 import { Zap, Swords, ArrowLeft } from 'lucide-react';
 import { Pokemon } from '../types/pokemon';
-import { fetchPokemonById, fetchRandomLegendaryPokemon } from '../services/pokeapi';
+import { fetchPokemonById, fetchRandomEventPokemon, fetchRandomLegendaryPokemon } from '../services/pokeapi';
 import { PokedexHeader } from '../components/PokedexHeader';
 
 interface CapturedPokemon extends Pokemon {
@@ -86,6 +86,23 @@ export function EnemyEncounterPage() {
               specialAttack: Math.floor(enemyPokemon.stats.specialAttack * 1.1),
               specialDefense: Math.floor(enemyPokemon.stats.specialDefense * 1.1),
               speed: Math.floor(enemyPokemon.stats.speed * 1),
+            },
+          };
+        } else if (modeData === 'event') {
+          console.log('Shiny Hunt mode: fetching shiny enemy');
+          enemyPokemon = await fetchRandomEventPokemon();
+
+          // Event should feel harder than normal, but still below boss fights.
+          enemyPokemon = {
+            ...enemyPokemon,
+            stats: {
+              ...enemyPokemon.stats,
+              hp: Math.floor(enemyPokemon.stats.hp * 1.18),
+              attack: Math.floor(enemyPokemon.stats.attack * 1.07),
+              defense: Math.floor(enemyPokemon.stats.defense * 1.07),
+              specialAttack: Math.floor(enemyPokemon.stats.specialAttack * 1.07),
+              specialDefense: Math.floor(enemyPokemon.stats.specialDefense * 1.07),
+              speed: Math.floor(enemyPokemon.stats.speed * 1.03),
             },
           };
         } else {

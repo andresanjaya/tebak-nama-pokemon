@@ -51,6 +51,7 @@ export interface Pokemon {
   height: number; // in m
   weaknesses: Weakness[];
   isLegendary?: boolean; // Legendary/Mythical Pokemon
+  isMythical?: boolean;
   evolution?: {
     prev?: Evolution;
     next?: Evolution;

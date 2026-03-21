@@ -269,7 +269,7 @@ export function PokemonSelectionPage() {
             className="w-full bg-[#f5f3de] border-2 border-[#2d2a43] text-[#1f1e2d] font-bold py-4 rounded-2xl hover:bg-[#ece8cc] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
           >
             <Gift className="w-5 h-5" />
-            <span>{isRenting ? 'Loading Rental Pokemon...' : 'Rent Random Pokémon'}</span>
+            <span >{isRenting ? 'Loading Rental Pokemon...' : 'Rent Random Pokémon'}</span>
           </button>
 
           <motion.button
@@ -277,13 +277,13 @@ export function PokemonSelectionPage() {
             disabled={!canStart}
             whileHover={canStart ? { scale: 1.02 } : {}}
             whileTap={canStart ? { scale: 0.98 } : {}}
-            className={`w-full font-black py-6 rounded-2xl shadow-2xl transition-all flex items-center justify-center gap-2 text-xl ${
+            className={`w-full font-black py-6 rounded-2xl shadow-2xl transition-all flex items-center justify-center gap-2 ${
               canStart
                 ? 'bg-[#f5f3de] border-2 border-[#2d2a43] text-[#1f1e2d] hover:bg-[#ece8cc]'
                 : 'bg-gray-400 text-gray-200 cursor-not-allowed'
             }`}
           >
-            <span>START BATTLE</span>
+            <span style={{ fontFamily: 'PKMN RBYGSC, monospace' }}>START BATTLE</span>
             <ChevronRight className="w-6 h-6" />
           </motion.button>
         </div>
@@ -299,7 +299,7 @@ export function PokemonSelectionPage() {
                 <div className="text-2xl">💡</div>
                 <div className="text-left">
                   <h4 className="font-bold text-dark-300 text-sm mb-1">First Time?</h4>
-                  <p className="text-dark-100 text-xs">
+                  <p className="text-dark-100 text-xs" >
                     Don't have Pokémon yet? Use <strong>"Rent Random Pokémon"</strong> to get 3 starter Pokémon for free! Win battles to catch and build your own collection.
                   </p>
                 </div>
@@ -351,8 +351,15 @@ export function PokemonSelectionPage() {
                         {pokemon.name}
                       </p>
                       <div className="flex justify-center gap-0.5 mt-1">
-                        {Array.from({ length: Math.min(pokemon.rarity, 3) }).map((_, i) => (
-                          <Star key={i} className="w-2 h-2 text-yellow-400 fill-yellow-400" />
+                        {Array.from({ length: pokemon.rarity }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-3 h-3 ${
+                              pokemon.rarity >= 5 ? 'text-yellow-400 fill-yellow-400' :
+                              pokemon.rarity >= 3 ? 'text-blue-400 fill-blue-400' :
+                              'text-gray-400 fill-gray-400'
+                            }`}
+                          />
                         ))}
                       </div>
                     </motion.button>

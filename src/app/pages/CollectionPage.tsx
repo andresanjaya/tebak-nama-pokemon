@@ -16,9 +16,20 @@ export function CollectionPage() {
   const [collection, setCollection] = useState<CapturedPokemon[]>([]);
   const [filteredCollection, setFilteredCollection] = useState<CapturedPokemon[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterMode, setFilterMode] = useState<'all' | 'normal' | 'boss' | 'event'>('all');
+  const [filterMode, setFilterMode] = useState<'all' | 'normal' | 'legendary' | 'mythical' | 'shiny'>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'rarity' | 'name'>('recent');
   const [showFilterSheet, setShowFilterSheet] = useState(false);
+
+  const isShinyPokemon = (pokemon: CapturedPokemon): boolean => {
+    return pokemon.name.toLowerCase().startsWith('shiny ') || pokemon.image.includes('/shiny/');
+  };
+
+  const getPokemonBadge = (pokemon: CapturedPokemon): 'shiny' | 'mythical' | 'legendary' | 'normal' => {
+    if (isShinyPokemon(pokemon)) return 'shiny';
+    if (pokemon.isMythical) return 'mythical';
+    if (pokemon.isLegendary) return 'legendary';
+    return 'normal';
+  };
 
   useEffect(() => {
     // Load captured Pokemon from localStorage
@@ -33,9 +44,9 @@ export function CollectionPage() {
   useEffect(() => {
     let filtered = [...collection];
 
-    // Filter by mode
+    // Filter by category
     if (filterMode !== 'all') {
-      filtered = filtered.filter(p => p.mode === filterMode);
+      filtered = filtered.filter(p => getPokemonBadge(p) === filterMode);
     }
 
     // Filter by search
@@ -63,10 +74,18 @@ export function CollectionPage() {
     return 'text-gray-400';
   };
 
-  const modeColor = (mode: string) => {
-    if (mode === 'boss') return 'bg-red-500';
-    if (mode === 'event') return 'bg-purple-500';
+  const badgeColor = (badge: 'shiny' | 'mythical' | 'legendary' | 'normal') => {
+    if (badge === 'shiny') return 'bg-purple-500';
+    if (badge === 'mythical') return 'bg-pink-500';
+    if (badge === 'legendary') return 'bg-yellow-500';
     return 'bg-green-500';
+  };
+
+  const badgeLabel = (badge: 'shiny' | 'mythical' | 'legendary' | 'normal') => {
+    if (badge === 'shiny') return 'SHINY';
+    if (badge === 'mythical') return 'MYTHICAL';
+    if (badge === 'legendary') return 'LEGENDARY';
+    return 'NORMAL';
   };
 
   return (
@@ -104,7 +123,7 @@ export function CollectionPage() {
             className="bg-white rounded-2xl p-4 shadow-lg text-center"
           >
             <div className="text-3xl font-black text-yellow-500">
-              {collection.filter(p => p.rarity >= 5).length}
+              {collection.filter(p => p.isLegendary && !p.isMythical).length}
             </div>
             <div className="text-xs text-gray-600 mt-1">Legendary</div>
           </motion.div>
@@ -116,9 +135,9 @@ export function CollectionPage() {
             className="bg-white rounded-2xl p-4 shadow-lg text-center"
           >
             <div className="text-3xl font-black text-red-500">
-              {collection.filter(p => p.mode === 'boss').length}
+              {collection.filter(p => p.isMythical).length}
             </div>
-            <div className="text-xs text-gray-600 mt-1">Boss</div>
+            <div className="text-xs text-gray-600 mt-1">Mythical</div>
           </motion.div>
         </div>
 
@@ -180,9 +199,12 @@ export function CollectionPage() {
                   className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all cursor-pointer"
                 >
                   {/* Mode Badge */}
+                  {(() => {
+                    const badge = getPokemonBadge(pokemon);
+                    return (
                   <div className="flex justify-between items-start mb-2">
-                    <div className={`${modeColor(pokemon.mode)} text-white text-xs font-bold px-2 py-1 rounded-full`}>
-                      {pokemon.mode.toUpperCase()}
+                    <div className={`${badgeColor(badge)} text-white text-xs font-bold px-2 py-1 rounded-full`}>
+                      {badgeLabel(badge)}
                     </div>
                     <div className="flex gap-0.5">
                       {Array.from({ length: pokemon.rarity }).map((_, i) => (
@@ -192,6 +214,8 @@ export function CollectionPage() {
                       ))}
                     </div>
                   </div>
+                    );
+                  })()}
 
                   {/* Pokemon Image */}
                   <img
@@ -254,12 +278,12 @@ export function CollectionPage() {
                 <div className="mb-4">
                   <p className="text-sm font-bold text-gray-700 mb-2">Category</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {['all', 'normal', 'boss', 'event'].map((mode) => {
+                    {['all', 'normal', 'legendary', 'mythical', 'shiny'].map((mode) => {
                       const active = filterMode === mode;
                       return (
                         <button
                           key={mode}
-                          onClick={() => setFilterMode(mode as any)}
+                          onClick={() => setFilterMode(mode as 'all' | 'normal' | 'legendary' | 'mythical' | 'shiny')}
                           className={`px-4 py-3 rounded-xl text-sm font-semibold flex items-center justify-between transition-all ${
                             active
                               ? 'bg-blue-500 text-white'

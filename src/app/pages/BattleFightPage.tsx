@@ -16,6 +16,12 @@ interface CapturedPokemon extends Pokemon {
   mode: string;
 }
 
+const getEnemyHpMultiplier = (battleMode?: string): number => {
+  if (battleMode === 'boss') return 3;
+  if (battleMode === 'event') return 2.7;
+  return 2.4;
+};
+
 export function BattleFightPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -40,6 +46,7 @@ export function BattleFightPage() {
   const [playerMoves, setPlayerMoves] = useState<BattleMove[]>([]);
   const [enemyMoves, setEnemyMoves] = useState<BattleMove[]>([]);
   const [loadingMoves, setLoadingMoves] = useState(false);
+  const [showRunAwayMessage, setShowRunAwayMessage] = useState(false);
 
   // Define all functions BEFORE any useEffect that uses them
   const dealDamage = useCallback((target: 'player' | 'enemy', amount: number, type: string) => {
@@ -192,8 +199,8 @@ export function BattleFightPage() {
     
     // Initialize HP values based on loaded data
     const initialMaxPlayerHP = teamData[0]?.stats?.hp || 100;
-    const enemyHpMultiplier = modeData === 'boss' ? 2.5 : 3;
-    const initialMaxEnemyHP = (enemyData?.stats?.hp || 100) * enemyHpMultiplier;
+    const enemyHpMultiplier = getEnemyHpMultiplier(modeData);
+    const initialMaxEnemyHP = Math.round((enemyData?.stats?.hp || 100) * enemyHpMultiplier);
     setPlayerHP(initialMaxPlayerHP);
     setEnemyHP(initialMaxEnemyHP);
   }, [location, navigate]);
@@ -252,10 +259,18 @@ export function BattleFightPage() {
     };
   }, [team, currentPokemonIndex, enemy]);
 
-  // First attack bonus
+  // Opening attack flow from coin flip result
   useEffect(() => {
-    if (firstAttackBonus && team && enemy && !firstAttackApplied && team.length > 0 && playerMoves.length > 0) {
+    if (!team || !enemy || firstAttackApplied || team.length === 0) {
+      return;
+    }
+
+    if (firstAttackBonus) {
       // Player gets first free hit
+      if (playerMoves.length === 0) {
+        return;
+      }
+
       const attacker = team[currentPokemonIndex];
       if (!attacker) {
         return;
@@ -272,9 +287,16 @@ export function BattleFightPage() {
           setCurrentMoveLabel(null);
         }, 1200);
       }, 500);
+
       return () => clearTimeout(timer);
     }
-  }, [firstAttackBonus, team, currentPokemonIndex, enemy, firstAttackApplied, playerMoves, calculateMoveDamage, dealDamage]);
+
+    // Enemy goes first if player loses coin flip.
+    if (enemyMoves.length > 0) {
+      setFirstAttackApplied(true);
+      setBattlePhase('enemy-turn');
+    }
+  }, [firstAttackBonus, team, currentPokemonIndex, enemy, firstAttackApplied, playerMoves, enemyMoves, calculateMoveDamage, dealDamage]);
 
   // Return early only AFTER all hooks
   if (!team || !enemy) {
@@ -284,7 +306,23 @@ export function BattleFightPage() {
   // Now it's safe to access team[currentPokemonIndex]
   const currentPokemon = team[currentPokemonIndex];
   const maxPlayerHP = currentPokemon?.stats?.hp || 100;
-  const maxEnemyHP = (enemy?.stats?.hp || 100) * 3; // 3x HP for 3 vs 1
+  const maxEnemyHP = Math.round((enemy?.stats?.hp || 100) * getEnemyHpMultiplier(mode));
+  const isBattleOngoing = enemyHP > 0 && playerHP > 0;
+
+  const handleBackClick = () => {
+    if (!isBattleOngoing || showRunAwayMessage) {
+      if (!showRunAwayMessage) {
+        navigate('/game/battle');
+      }
+      return;
+    }
+
+    setShowSwitchModal(false);
+    setShowRunAwayMessage(true);
+    setTimeout(() => {
+      navigate('/game/battle');
+    }, 1400);
+  };
 
   const handleAttackClick = async () => {
     if (battlePhase !== 'player-turn' || loadingMoves || playerMoves.length === 0) {
@@ -311,7 +349,7 @@ export function BattleFightPage() {
       <PokedexHeader
         leftButton={
           <button
-            onClick={() => navigate('/game/battle')}
+            onClick={handleBackClick}
             className="w-14 h-14 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
           >
             <ArrowLeft className="w-6 h-6 text-gray-800" />
@@ -320,8 +358,15 @@ export function BattleFightPage() {
       />
 
       <div className="w-full px-4 pt-4">
+        <div className="flex justify-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#f5f3de] border-2 border-[#f25353] shadow-[0_3px_0_#2d2a43]">
+            <span className="text-[10px] font-black tracking-[0.14em] text-[#b74d35] uppercase">Battle</span>
+            <div className="w-px h-4 bg-[#d4cfbb]" />
+            <span className="text-xs font-black text-[#1f1e2d]">Turn {turnCount + 1}</span>
+          </div>
+        </div>
       {/* Retro Battle Scene */}
-      <div className="relative flex-1 min-h-[395px] rounded-2xl overflow-hidden mt-1">
+      <div className="relative flex-1 min-h-[395px] rounded-2xl overflow-hidden mt-2">
           
 
           {/* Battle circles */}
@@ -331,7 +376,7 @@ export function BattleFightPage() {
           {/* Enemy Status Panel */}
           <div className="absolute top-4 left-4 z-20 w-[58%] max-w-[250px] bg-[#f5f3de] rounded-sm px-3 py-2 shadow-[4px_4px_0_#2d2a43]">
             <div className="flex items-center justify-between mb-1 text-[#1f1e2d]">
-              <p className="font-black text-sm capitalize truncate pr-2">{enemy.name}</p>
+              <p className="font-black fs-1 capitalize truncate pr-2" style={{ fontFamily: 'PKMN RBYGSC, monospace' }}>{enemy.name}</p>
               <p className="font-black text-xs">Lv {Math.max(1, Math.floor(enemy.stats.hp / 10))}</p>
             </div>
             <div className="flex items-center gap-2">
@@ -352,7 +397,7 @@ export function BattleFightPage() {
           <motion.div
             animate={{ y: battlePhase === 'enemy-turn' ? [0, -6, 0] : 0, scale: showDamage?.target === 'enemy' ? 0.92 : 1 }}
             transition={{ y: { repeat: Infinity, duration: 1.4 }, scale: { duration: 0.2 } }}
-            className="absolute top-[78px] right-[44px] z-10"
+            className="absolute top-[40px] right-[30px] z-10"
           >
             <img
               src={enemy.image}
@@ -379,7 +424,7 @@ export function BattleFightPage() {
           {/* Player Status Panel */}
           <div className="absolute bottom-4 right-4 z-20 w-[62%] max-w-[280px] bg-[#f5f3de] rounded-sm px-3 py-2 shadow-[4px_4px_0_#2d2a43]">
             <div className="flex items-center justify-between mb-1 text-[#1f1e2d]">
-              <p className="font-black text-sm capitalize truncate pr-2">{currentPokemon.name}</p>
+              <p className="font-black text-sm capitalize truncate pr-2" style={{ fontFamily: 'PKMN RBYGSC, monospace' }}>{currentPokemon.name}</p>
               <p className="font-black text-xs">Lv {Math.max(1, Math.floor(currentPokemon.stats.hp / 10))}</p>
             </div>
             <div className="flex items-center gap-2">
@@ -418,7 +463,7 @@ export function BattleFightPage() {
 
       {/* Retro Command Area */}
       <div className="bg-[#db5b34] rounded-2xl p-1 mt-3">
-          <div className="bg-[#4f8f98] rounded-xl p-3 min-h-[90px] flex items-center justify-center">
+          <div className="bg-[#4f8f98] rounded-xl p-3 min-h-[70px] flex items-center justify-center">
             <p className="text-white text-lg font-black text-center">
               {currentMoveLabel ?? (battlePhase === 'enemy-turn' ? `Enemy's turn...` : `What will ${currentPokemon.name} do?`)}
             </p>
@@ -430,7 +475,7 @@ export function BattleFightPage() {
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={handleAttackClick}
-            disabled={battlePhase !== 'player-turn' || loadingMoves || playerMoves.length === 0}
+            disabled={battlePhase !== 'player-turn' || loadingMoves || playerMoves.length === 0 || showRunAwayMessage}
             className="bg-[#f08f4f] text-white font-black py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <Zap className="w-5 h-5" />
@@ -440,7 +485,7 @@ export function BattleFightPage() {
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={() => setShowSwitchModal(true)}
-            disabled={battlePhase !== 'player-turn' || team.length <= 1}
+            disabled={battlePhase !== 'player-turn' || team.length <= 1 || showRunAwayMessage}
             className="bg-[#5d8ed8] text-white font-black py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <RefreshCw className="w-5 h-5" />
@@ -448,7 +493,7 @@ export function BattleFightPage() {
           </motion.button>
       </div>
 
-      <div className="text-center text-[#1f1e2d] text-xs font-semibold mt-2">Turn {turnCount + 1}</div>
+     
       </div>
 
       {/* Switch Pokemon Modal */}
@@ -507,7 +552,7 @@ export function BattleFightPage() {
                         style={{ imageRendering: 'pixelated' }}
                       />
                       <div className="flex-1 text-left">
-                        <h3 className="font-bold text-gray-900 capitalize">
+                        <h3 className="font-bold text-gray-900 capitalize" style={{ fontFamily: 'PKMN RBYGSC, monospace' }}>
                           {pokemon.name}
                         </h3>
                         <p className="text-sm text-gray-600">
@@ -536,6 +581,23 @@ export function BattleFightPage() {
                 Cancel
               </button>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showRunAwayMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            className="fixed left-1/2 -translate-x-1/2 bottom-28 w-[min(90vw,330px)] z-50 pointer-events-none"
+          >
+            <div className="bg-[#f8f8f8] border-[3px] border-[#2d2a43] p-1.5 shadow-[4px_4px_0_#2d2a43]">
+              <div className="bg-white border-2 border-[#c9ccd4] px-3 py-4 text-left text-[#2a2a2a] tracking-wide leading-snug text-[17px] sm:text-[18px]" style={{ fontFamily: 'PKMN RBYGSC, monospace' }}>
+                You got away safely!
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
