@@ -5,6 +5,7 @@ import { Sparkles, Star, ArrowLeft } from 'lucide-react';
 import { Pokemon } from '../types/pokemon';
 import { calculatePokemonRarity } from '../services/pokeapi';
 import { PokedexHeader } from '../components/PokedexHeader';
+import { withDefaultProgress } from '../utils/capturedPokemonProgress';
 
 export function CapturePage() {
   const navigate = useNavigate();
@@ -119,12 +120,12 @@ export function CapturePage() {
       
       if (success) {
         // Save captured Pokemon
-        const capturedPokemon = {
+        const capturedPokemon = withDefaultProgress({
           ...pokemon,
           rarity,
           capturedAt: new Date().toISOString(),
           mode,
-        };
+        });
         
         const saved = localStorage.getItem('capturedPokemon');
         const captured = saved ? JSON.parse(saved) : [];

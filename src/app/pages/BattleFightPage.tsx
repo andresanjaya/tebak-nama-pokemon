@@ -1,19 +1,27 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Zap, RefreshCw, ArrowLeft } from 'lucide-react';
 import { Pokemon } from '../types/pokemon';
 import { PokedexHeader } from '../components/PokedexHeader';
+import { TypeBadge } from '../components/TypeBadge';
 import {
   BattleMove,
   fetchPokemonBattleMoves,
   getTypeEffectivenessMultiplier,
 } from '../services/pokeapi';
+import { applyBattleProgressToCapturedPokemon, getPokemonLevel } from '../utils/capturedPokemonProgress';
 
 interface CapturedPokemon extends Pokemon {
   rarity: number;
   capturedAt: string;
   mode: string;
+  isRented?: boolean;
+  capturedId?: string;
+  level?: number;
+  xp?: number;
+  battlesUsed?: number;
+  wins?: number;
 }
 
 const getEnemyHpMultiplier = (battleMode?: string): number => {
@@ -47,6 +55,23 @@ export function BattleFightPage() {
   const [enemyMoves, setEnemyMoves] = useState<BattleMove[]>([]);
   const [loadingMoves, setLoadingMoves] = useState(false);
   const [showRunAwayMessage, setShowRunAwayMessage] = useState(false);
+  const battleProgressAppliedRef = useRef(false);
+
+  const applyTeamBattleProgress = useCallback((didWin: boolean) => {
+    if (!team || battleProgressAppliedRef.current) {
+      return;
+    }
+
+    battleProgressAppliedRef.current = true;
+    const progressResult = applyBattleProgressToCapturedPokemon(team, didWin, mode);
+
+    // Only show level-up popup after completed victory flow.
+    if (didWin && progressResult.levelUps.length > 0) {
+      sessionStorage.setItem('battlePokemonLevelUps', JSON.stringify(progressResult.levelUps));
+    } else {
+      sessionStorage.removeItem('battlePokemonLevelUps');
+    }
+  }, [team, mode]);
 
   // Define all functions BEFORE any useEffect that uses them
   const dealDamage = useCallback((target: 'player' | 'enemy', amount: number, type: string) => {
@@ -60,6 +85,7 @@ export function BattleFightPage() {
         const newHP = Math.max(0, prev - amount);
         if (newHP <= 0) {
           // Battle won!
+          applyTeamBattleProgress(true);
           setTimeout(() => {
             navigate('/game/battle/capture', {
               state: { pokemon: enemy, mode }
@@ -75,12 +101,15 @@ export function BattleFightPage() {
           // Battle lost - switch Pokemon or lose
           if (currentPokemonIndex < team.length - 1) {
             setTimeout(() => {
+              const nextPokemon = team[currentPokemonIndex + 1];
+              const nextMaxHP = nextPokemon?.stats?.hp || 100;
               setCurrentPokemonIndex(prev => prev + 1);
-              setPlayerHP(100);
+              setPlayerHP(nextMaxHP);
               setBattlePhase('player-turn');
             }, 2000);
           } else {
             // All Pokemon fainted - battle lost
+            applyTeamBattleProgress(false);
             setTimeout(() => {
               navigate('/game/battle', {
                 state: { battleResult: 'lost' }
@@ -91,7 +120,7 @@ export function BattleFightPage() {
         return newHP;
       });
     }
-  }, [team, enemy, mode, currentPokemonIndex, navigate]);
+  }, [team, enemy, mode, currentPokemonIndex, navigate, applyTeamBattleProgress]);
 
   const calculateMoveDamage = useCallback(async (
     attacker: Pokemon,
@@ -155,6 +184,8 @@ export function BattleFightPage() {
 
   // Initialize state from location or sessionStorage
   useEffect(() => {
+    sessionStorage.removeItem('battlePokemonLevelUps');
+
     let teamData = location.state?.team as CapturedPokemon[] | undefined;
     let enemyData = location.state?.enemy as Pokemon | undefined;
     let modeData = location.state?.mode as string | undefined;
@@ -307,6 +338,8 @@ export function BattleFightPage() {
   const currentPokemon = team[currentPokemonIndex];
   const maxPlayerHP = currentPokemon?.stats?.hp || 100;
   const maxEnemyHP = Math.round((enemy?.stats?.hp || 100) * getEnemyHpMultiplier(mode));
+  const displayedPlayerHP = Math.min(playerHP, maxPlayerHP);
+  const displayedEnemyHP = Math.min(enemyHP, maxEnemyHP);
   const isBattleOngoing = enemyHP > 0 && playerHP > 0;
 
   const handleBackClick = () => {
@@ -329,6 +362,9 @@ export function BattleFightPage() {
       return;
     }
 
+    // Immediately change phase to prevent spam clicking
+    setBattlePhase('enemy-turn');
+
     const move = playerMoves[Math.floor(Math.random() * playerMoves.length)];
     const { damage, effectivenessText } = await calculateMoveDamage(currentPokemon, enemy, move);
 
@@ -336,9 +372,6 @@ export function BattleFightPage() {
     dealDamage('enemy', damage, `${effectivenessText}!`);
 
     setTimeout(() => {
-      if (enemyHP - damage > 0) {
-        setBattlePhase('enemy-turn');
-      }
       setCurrentMoveLabel(null);
     }, 1500);
   };
@@ -377,20 +410,27 @@ export function BattleFightPage() {
           <div className="absolute top-4 left-4 z-20 w-[58%] max-w-[250px] bg-[#f5f3de] rounded-sm px-3 py-2 shadow-[4px_4px_0_#2d2a43]">
             <div className="flex items-center justify-between mb-1 text-[#1f1e2d]">
               <p className="font-black fs-1 capitalize truncate pr-2" style={{ fontFamily: 'PKMN RBYGSC, monospace' }}>{enemy.name}</p>
-              <p className="font-black text-xs">Lv {Math.max(1, Math.floor(enemy.stats.hp / 10))}</p>
+              <p className="font-black text-xs">Lv {getPokemonLevel(enemy)}</p>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-black text-[#b74d35]">HP</span>
               <div className="h-3 flex-1 bg-[#c2bca4] rounded-sm overflow-hidden">
                 <motion.div
                   initial={{ width: '100%' }}
-                  animate={{ width: `${(enemyHP / maxEnemyHP) * 100}%` }}
+                  animate={{ width: `${(displayedEnemyHP / maxEnemyHP) * 100}%` }}
                   className="h-full bg-[#5fcc73]"
                   transition={{ duration: 0.4 }}
                 />
               </div>
             </div>
-            <p className="text-[11px] mt-1 text-right font-bold text-[#2d2a43]">{enemyHP}/{maxEnemyHP}</p>
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-[11px] font-bold text-[#2d2a43]">{displayedEnemyHP}/{maxEnemyHP}</p>
+              <div className="flex gap-1 flex-wrap justify-end">
+                {enemy.types.map((type) => (
+                  <TypeBadge key={type} type={type} size="xs" />
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Enemy Sprite */}
@@ -425,20 +465,27 @@ export function BattleFightPage() {
           <div className="absolute bottom-4 right-4 z-20 w-[62%] max-w-[280px] bg-[#f5f3de] rounded-sm px-3 py-2 shadow-[4px_4px_0_#2d2a43]">
             <div className="flex items-center justify-between mb-1 text-[#1f1e2d]">
               <p className="font-black text-sm capitalize truncate pr-2" style={{ fontFamily: 'PKMN RBYGSC, monospace' }}>{currentPokemon.name}</p>
-              <p className="font-black text-xs">Lv {Math.max(1, Math.floor(currentPokemon.stats.hp / 10))}</p>
+              <p className="font-black text-xs">Lv {getPokemonLevel(currentPokemon)}</p>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-black text-[#b74d35]">HP</span>
               <div className="h-3 flex-1 bg-[#c2bca4] rounded-sm overflow-hidden">
                 <motion.div
                   initial={{ width: '100%' }}
-                  animate={{ width: `${(playerHP / maxPlayerHP) * 100}%` }}
+                  animate={{ width: `${(displayedPlayerHP / maxPlayerHP) * 100}%` }}
                   className="h-full bg-[#5fcc73]"
                   transition={{ duration: 0.4 }}
                 />
               </div>
             </div>
-            <p className="text-[11px] mt-1 text-right font-bold text-[#2d2a43]">{playerHP}/{maxPlayerHP}</p>
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-[11px] font-bold text-[#2d2a43]">{displayedPlayerHP}/{maxPlayerHP}</p>
+              <div className="flex gap-1 flex-wrap justify-end">
+                {currentPokemon.types.map((type) => (
+                  <TypeBadge key={type} type={type} size="xs" />
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Damage Numbers */}
@@ -556,7 +603,7 @@ export function BattleFightPage() {
                           {pokemon.name}
                         </h3>
                         <p className="text-sm text-gray-600">
-                          Lv. {Math.floor(pokemon.stats.hp / 10)}
+                          Lv. {getPokemonLevel(pokemon)}
                         </p>
                         {isCurrentPokemon && (
                           <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full font-bold">

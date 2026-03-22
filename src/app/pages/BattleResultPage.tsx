@@ -1,11 +1,12 @@
 import { useNavigate, useLocation } from 'react-router';
 import { useEffect, useRef, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Star, Zap, RotateCcw, Home, ArrowLeft } from 'lucide-react';
 import { Pokemon } from '../types/pokemon';
 import { applyXpGain } from '../utils/playerProgress';
 import { calculatePokemonRarity, fetchRandomPokemon } from '../services/pokeapi';
 import { PokedexHeader } from '../components/PokedexHeader';
+import { withDefaultProgress } from '../utils/capturedPokemonProgress';
 
 export function BattleResultPage() {
   const navigate = useNavigate();
@@ -15,6 +16,8 @@ export function BattleResultPage() {
   const [levelUpRewards, setLevelUpRewards] = useState<Pokemon[]>([]);
   const [currentRewardIndex, setCurrentRewardIndex] = useState(0);
   const [showRewardModal, setShowRewardModal] = useState(false);
+  const [pokemonLevelUps, setPokemonLevelUps] = useState<Array<{ name: string; fromLevel: number; toLevel: number }>>([]);
+  const [showPokemonLevelUpModal, setShowPokemonLevelUpModal] = useState(false);
   const progressAppliedRef = useRef(false);
   
   // Get state data
@@ -121,16 +124,35 @@ export function BattleResultPage() {
     };
   }, [pokemon, xpEarned]);
 
+  useEffect(() => {
+    const levelUpRaw = sessionStorage.getItem('battlePokemonLevelUps');
+    if (!levelUpRaw) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(levelUpRaw) as Array<{ name: string; fromLevel: number; toLevel: number }>;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        setPokemonLevelUps(parsed);
+        setShowPokemonLevelUpModal(true);
+      }
+    } catch (error) {
+      console.error('Failed to parse battlePokemonLevelUps:', error);
+    } finally {
+      sessionStorage.removeItem('battlePokemonLevelUps');
+    }
+  }, []);
+
   const saveCapturedPokemon = (capturedPokemon: Pokemon, capturedMode: string) => {
     const saved = localStorage.getItem('capturedPokemon');
     const captured = saved ? JSON.parse(saved) : [];
 
-    captured.push({
+    captured.push(withDefaultProgress({
       ...capturedPokemon,
       rarity: calculatePokemonRarity(capturedPokemon),
       capturedAt: new Date().toISOString(),
       mode: capturedMode,
-    });
+    }));
 
     localStorage.setItem('capturedPokemon', JSON.stringify(captured));
     localStorage.setItem('capturedCount', captured.length.toString());
@@ -423,6 +445,46 @@ export function BattleResultPage() {
           </motion.div>
         </div>
       )}
+
+      <AnimatePresence>
+        {showPokemonLevelUpModal && pokemonLevelUps.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[60]"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 12 }}
+              className="bg-[#f5f3de] border-2 border-[#2d2a43] rounded-3xl p-6 max-w-md w-full shadow-xl"
+            >
+              <div className="text-center mb-4">
+                <div className="text-5xl mb-1">⬆️</div>
+                <h2 className="text-2xl font-black text-[#1f1e2d]">Level Up!</h2>
+                <p className="text-sm text-[#4a5467]">Pokémon kamu bertambah kuat setelah battle.</p>
+              </div>
+
+              <div className="space-y-2 mb-5 max-h-[260px] overflow-y-auto pr-1">
+                {pokemonLevelUps.map((entry, index) => (
+                  <div key={`${entry.name}-${entry.toLevel}-${index}`} className="bg-[#ece9df] border border-[#d7d2c3] rounded-xl px-3 py-2 flex items-center justify-between">
+                    <span className="font-bold capitalize text-[#1f1e2d]">{entry.name}</span>
+                    <span className="text-sm font-black text-[#b74d35]">Lv {entry.fromLevel} → Lv {entry.toLevel}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setShowPokemonLevelUpModal(false)}
+                className="w-full bg-[#DC2626] text-white font-bold py-3 rounded-2xl hover:bg-[#B91C1C]"
+              >
+                Nice!
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

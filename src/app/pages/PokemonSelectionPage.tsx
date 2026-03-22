@@ -7,12 +7,18 @@ import { fetchPokemonById, calculatePokemonRarity } from '../services/pokeapi';
 import { PokedexHeader } from '../components/PokedexHeader';
 import { TypeBadge } from '../components/TypeBadge';
 import { typeLightColors } from '../utils/typeColors';
+import { getPokemonLevel, getPokemonXpProgress, withDefaultProgress } from '../utils/capturedPokemonProgress';
 
 interface CapturedPokemon extends Pokemon {
   rarity: number;
   capturedAt: string;
   mode: string;
   isRented?: boolean;
+  capturedId?: string;
+  level?: number;
+  xp?: number;
+  battlesUsed?: number;
+  wins?: number;
 }
 
 export function PokemonSelectionPage() {
@@ -29,7 +35,8 @@ export function PokemonSelectionPage() {
   useEffect(() => {
     const saved = localStorage.getItem('capturedPokemon');
     if (saved) {
-      const captured = JSON.parse(saved);
+      const captured = (JSON.parse(saved) as CapturedPokemon[]).map((pokemon) => withDefaultProgress(pokemon));
+      localStorage.setItem('capturedPokemon', JSON.stringify(captured));
       setCollection(captured);
       
       // Auto-select first 3 if available
@@ -95,7 +102,7 @@ export function PokemonSelectionPage() {
           isRented: true,
         };
 
-        rentalPokemon.push(pokemon);
+        rentalPokemon.push(withDefaultProgress(pokemon));
       }
 
       console.log('Rental Pokemon generated:', rentalPokemon);
@@ -220,6 +227,20 @@ export function PokemonSelectionPage() {
                   <h3 className="text-[#1f1e2d] font-bold capitalize text-sm mb-1">
                     {pokemon.name}
                   </h3>
+                  <p className="text-[#1f1e2d] text-xs font-semibold mb-1">
+                    Lv. {getPokemonLevel(pokemon)}
+                  </p>
+                  <div className="w-full mb-2">
+                    <div className="h-1.5 w-full bg-white/70 rounded-full overflow-hidden border border-[#d6d2c6]">
+                      <div
+                        className="h-full bg-[#4f8f98]"
+                        style={{ width: `${getPokemonXpProgress(pokemon).progressPercent}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-[#364046] font-semibold mt-0.5 text-center">
+                      XP {getPokemonXpProgress(pokemon).currentXp}/{getPokemonXpProgress(pokemon).xpRequired}
+                    </p>
+                  </div>
                   
                   {/* Rarity Stars */}
                   <div className="flex gap-0.5 mb-2">
@@ -350,7 +371,23 @@ export function PokemonSelectionPage() {
                       <p className="text-[#1f1e2d] text-xs font-bold capitalize truncate">
                         {pokemon.name}
                       </p>
+                      <p className="text-[#1f1e2d] text-xs font-semibold mb-1">
+                        Lv. {getPokemonLevel(pokemon)}
+                      </p>
+                      <div className="w-full mb-1">
+                        <div className="h-1.5 w-full bg-[#e5e2d7] rounded-full overflow-hidden border border-[#d6d2c6]">
+                          <div
+                            className="h-full bg-[#4f8f98]"
+                            style={{ width: `${getPokemonXpProgress(pokemon).progressPercent}%` }}
+                          />
+                        </div>
+                        <p className="text-[10px] text-[#364046] font-semibold mt-0.5">
+                          XP {getPokemonXpProgress(pokemon).currentXp}/{getPokemonXpProgress(pokemon).xpRequired}
+                        </p>
+                      </div>
                       <div className="flex justify-center gap-0.5 mt-1">
+                                          
+                  
                         {Array.from({ length: pokemon.rarity }).map((_, i) => (
                           <Star
                             key={i}

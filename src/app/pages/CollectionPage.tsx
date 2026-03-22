@@ -4,11 +4,17 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Star, Trophy, Filter, Search, X, Check } from 'lucide-react';
 import { PokedexHeader } from '../components/PokedexHeader';
 import { Pokemon } from '../types/pokemon';
+import { getPokemonLevel, getPokemonXpProgress, withDefaultProgress } from '../utils/capturedPokemonProgress';
 
 interface CapturedPokemon extends Pokemon {
   rarity: number;
   capturedAt: string;
   mode: string;
+  capturedId?: string;
+  level?: number;
+  xp?: number;
+  battlesUsed?: number;
+  wins?: number;
 }
 
 export function CollectionPage() {
@@ -35,7 +41,8 @@ export function CollectionPage() {
     // Load captured Pokemon from localStorage
     const saved = localStorage.getItem('capturedPokemon');
     if (saved) {
-      const captured = JSON.parse(saved) as CapturedPokemon[];
+      const captured = (JSON.parse(saved) as CapturedPokemon[]).map((pokemon) => withDefaultProgress(pokemon));
+      localStorage.setItem('capturedPokemon', JSON.stringify(captured));
       setCollection(captured);
       setFilteredCollection(captured);
     }
@@ -229,6 +236,20 @@ export function CollectionPage() {
                   <h3 className="text-lg font-bold text-gray-900 capitalize mb-1 truncate">
                     {pokemon.name}
                   </h3>
+                  <p className="text-sm font-semibold text-gray-700 mb-1">
+                    Lv. {getPokemonLevel(pokemon)}
+                  </p>
+                  <div className="mb-2">
+                    <div className="h-1.5 w-full bg-[#ece9df] rounded-full overflow-hidden border border-[#d7d2c3]">
+                      <div
+                        className="h-full bg-[#4f8f98]"
+                        style={{ width: `${getPokemonXpProgress(pokemon).progressPercent}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-gray-600 font-semibold mt-0.5">
+                      XP {getPokemonXpProgress(pokemon).currentXp}/{getPokemonXpProgress(pokemon).xpRequired}
+                    </p>
+                  </div>
                   <div className="flex items-center gap-1 text-xs text-gray-500">
                     <Trophy className="w-3 h-3" />
                     <span>

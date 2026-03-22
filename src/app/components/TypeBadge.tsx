@@ -3,7 +3,7 @@ import { getTypeIconStyle } from '../utils/typeIconImages';
 
 interface TypeBadgeProps {
   type: PokemonType;
-  size?: 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md';
   showIcon?: boolean;
 }
 
@@ -30,13 +30,18 @@ const typeColors: Record<PokemonType, string> = {
 };
 
 export function TypeBadge({ type, size = 'md', showIcon = true }: TypeBadgeProps) {
-  const sizeClasses = size === 'sm' ? 'text-xs px-2.5 py-1' : 'text-sm px-3 py-1.5';
-  const iconSize = size === 'sm' ? 14 : 16;
+  const sizeClasses =
+    size === 'xs'
+      ? 'text-[10px] px-2 py-0.5'
+      : size === 'sm'
+      ? 'text-xs px-2.5 py-1'
+      : 'text-sm px-3 py-1.5';
+  const iconSize = size === 'xs' ? 12 : size === 'sm' ? 14 : 16;
   
   return (
     <span
       style={{ backgroundColor: typeColors[type] }}
-      className={`${sizeClasses} rounded-full text-white capitalize inline-flex items-center gap-1.5 font-medium shadow-sm`}
+      className={`${sizeClasses} rounded-full text-white capitalize inline-flex items-center gap-1 font-medium shadow-sm`}
     >
       {showIcon && (
         <div 
