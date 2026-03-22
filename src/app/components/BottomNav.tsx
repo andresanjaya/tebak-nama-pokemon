@@ -1,13 +1,11 @@
-import { Gamepad2, Heart, Map, LogOut } from 'lucide-react';
+import { Gamepad2, Heart, Map, User } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { PokeballIcon } from './PokeballIcon';
-import { useAuth } from '../contexts/AuthContext';
 
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
   
   const isActive = (path: string) => {
     if (path === '/') {
@@ -22,11 +20,6 @@ export function BottomNav() {
     { path: '/favorites', icon: Heart, label: 'Favorites' },
     { path: '/game', icon: Gamepad2, label: 'Games' },
   ];
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40">
@@ -86,18 +79,34 @@ export function BottomNav() {
             );
           })}
 
-          {/* Logout button */}
+          {/* Profile button */}
           <motion.button
             whileTap={{ scale: 0.9 }}
-            onClick={handleLogout}
+            onClick={() => navigate('/profile')}
             className="flex flex-col items-center justify-center flex-1"
           >
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-red-700/50 hover:bg-red-700/70 transition-all">
-              <LogOut className="w-5 h-5 text-white/70" />
+            <div className="flex flex-col items-center gap-1.5">
+              <div
+                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
+                  isActive('/profile')
+                    ? 'bg-white shadow-lg'
+                    : 'bg-red-700/50 hover:bg-red-700/70'
+                }`}
+              >
+                <User
+                  className={`w-5 h-5 ${
+                    isActive('/profile') ? 'text-[#DC2626]' : 'text-white/70'
+                  }`}
+                />
+              </div>
+              <span
+                className={`text-[8px] font-bold tracking-wider ${
+                  isActive('/profile') ? 'text-white' : 'text-white/60'
+                }`}
+              >
+                PROFILE
+              </span>
             </div>
-            <span className="text-[8px] font-bold tracking-wider text-white/60">
-              LOGOUT
-            </span>
           </motion.button>
         </div>
       </div>

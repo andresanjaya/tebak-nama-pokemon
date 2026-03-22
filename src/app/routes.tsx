@@ -18,6 +18,7 @@ import { FavoritesPage } from './pages/FavoritesPage';
 import { RegionsPage } from './pages/RegionsPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { LoginPage } from './pages/LoginPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ReactElement } from 'react';
 
@@ -40,19 +41,23 @@ export const router = createBrowserRouter([
   },
   {
     path: '/',
-    element: <ProtectedRoute><LayoutWrapper><PokedexPage /></LayoutWrapper></ProtectedRoute>,
+    element: <LayoutWrapper><PokedexPage /></LayoutWrapper>,
   },
   {
     path: '/pokemon/:id',
-    element: <ProtectedRoute><LayoutWrapper showHeader={false}><DetailPage /></LayoutWrapper></ProtectedRoute>,
+    element: <LayoutWrapper showHeader={false}><DetailPage /></LayoutWrapper>,
   },
   {
     path: '/regions',
-    element: <ProtectedRoute><LayoutWrapper><RegionsPage /></LayoutWrapper></ProtectedRoute>,
+    element: <LayoutWrapper><RegionsPage /></LayoutWrapper>,
   },
   {
     path: '/favorites',
-    element: <ProtectedRoute><LayoutWrapper><FavoritesPage /></LayoutWrapper></ProtectedRoute>,
+    element: <LayoutWrapper><FavoritesPage /></LayoutWrapper>,
+  },
+  {
+    path: '/profile',
+    element: <LayoutWrapper><ProfilePage /></LayoutWrapper>,
   },
   {
     path: '/game',

@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const projectId = 'wcjenjebetvwkxnptvib';
-const publicAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjamVuamViZXR2d2t4bnB0dmliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5Njc0NDIsImV4cCI6MjA4OTU0MzQ0Mn0.UJxzI3OUVAJY-SxMU7QQ-DVySFd2fwRj1xqDUlMJIYM';
+const projectId = 'qhuzfeizljimreovqgqr';
+const publicAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFodXpmZWl6bGppbXJlb3ZxZ3FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNzY2MjIsImV4cCI6MjA4OTc1MjYyMn0.SiBktWdrX2tmBbCpyznjdycCpCl-7UYzaksCpYEUK-E';
 const supabaseUrl = `https://${projectId}.supabase.co`;
 
 export const supabase = createClient(supabaseUrl, publicAnonKey);
@@ -125,6 +125,53 @@ export const capturedPokemonService = {
       .delete()
       .eq('user_id', userId)
       .eq('captured_id', capturedId);
+    if (error) throw error;
+  },
+};
+
+const PROFILE_PHOTO_BUCKET = 'profile-photos';
+
+function getProfilePhotoPath(userId: string) {
+  return `${userId}/avatar.jpg`;
+}
+
+export const profilePhotoService = {
+  async uploadProfilePhoto(userId: string, imageBlob: Blob) {
+    const filePath = getProfilePhotoPath(userId);
+    const { error } = await supabase.storage
+      .from(PROFILE_PHOTO_BUCKET)
+      .upload(filePath, imageBlob, {
+        upsert: true,
+        contentType: 'image/jpeg',
+        cacheControl: '3600',
+      });
+
+    if (error) throw error;
+    return filePath;
+  },
+
+  async getProfilePhotoUrl(userId: string) {
+    const filePath = getProfilePhotoPath(userId);
+    const { data, error } = await supabase.storage
+      .from(PROFILE_PHOTO_BUCKET)
+      .createSignedUrl(filePath, 60 * 60 * 24 * 30);
+
+    if (error) {
+      // If no photo exists yet, return null instead of failing page render.
+      if (error.message?.toLowerCase().includes('not found')) {
+        return null;
+      }
+      throw error;
+    }
+
+    return data?.signedUrl || null;
+  },
+
+  async deleteProfilePhoto(userId: string) {
+    const filePath = getProfilePhotoPath(userId);
+    const { error } = await supabase.storage
+      .from(PROFILE_PHOTO_BUCKET)
+      .remove([filePath]);
     if (error) throw error;
   },
 };
