@@ -2,13 +2,16 @@ import { useLocation, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { Trophy, Home, RotateCcw, Star } from 'lucide-react';
 import { GameResult } from '../types/pokemon';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { applyXpGain } from '../utils/playerProgress';
+import { getGuessingXpBreakdown } from '../utils/expRewards';
 
 export function ResultPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const result = location.state as GameResult;
   const [showConfetti, setShowConfetti] = useState(false);
+  const xpAppliedRef = useRef(false);
 
   useEffect(() => {
     if (result && result.score >= result.totalQuestions * 0.7) {
@@ -22,6 +25,26 @@ export function ResultPage() {
   }
 
   const percentage = Math.round((result.score / result.totalQuestions) * 100);
+  const xpBreakdown = getGuessingXpBreakdown(
+    result.correctAnswers.length,
+    result.incorrectAnswers.length,
+    result.bestStreak ?? 0
+  );
+
+  useEffect(() => {
+    if (xpAppliedRef.current) {
+      return;
+    }
+
+    xpAppliedRef.current = true;
+
+    const currentXP = parseInt(localStorage.getItem('playerXP') || '0');
+    const currentLevel = parseInt(localStorage.getItem('playerLevel') || '1');
+    const { newLevel, newXp } = applyXpGain(currentLevel, currentXP, xpBreakdown.totalXp);
+
+    localStorage.setItem('playerLevel', newLevel.toString());
+    localStorage.setItem('playerXP', newXp.toString());
+  }, [xpBreakdown.totalXp]);
   
   const getRank = () => {
     if (percentage >= 90) return { title: 'Pokémon Master!', color: 'text-yellow-500', stars: 3 };
@@ -122,12 +145,40 @@ export function ResultPage() {
           </div>
         </motion.div>
 
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="bg-white rounded-2xl p-5 shadow-md w-full mb-6"
+        >
+          <h3 className="font-bold mb-3">EXP Earned</h3>
+          <div className="space-y-2 text-sm text-gray-700">
+            <div className="flex justify-between">
+              <span>Correct Answers</span>
+              <span className="font-semibold">+{xpBreakdown.correctXp} XP</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Participation</span>
+              <span className="font-semibold">+{xpBreakdown.wrongXp} XP</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Best Streak Bonus</span>
+              <span className="font-semibold">+{xpBreakdown.streakBonusXp} XP</span>
+            </div>
+            <div className="h-px bg-gray-200 my-2" />
+            <div className="flex justify-between font-bold text-blue-600">
+              <span>Total</span>
+              <span>+{xpBreakdown.totalXp} XP</span>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Summary */}
         {result.incorrectAnswers.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
+            transition={{ delay: 0.85 }}
             className="bg-white rounded-2xl p-5 shadow-md w-full mb-6"
           >
             <h3 className="font-bold mb-3">Missed Pokémon:</h3>

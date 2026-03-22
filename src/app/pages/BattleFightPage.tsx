@@ -11,6 +11,7 @@ import {
   getTypeEffectivenessMultiplier,
 } from '../services/pokeapi';
 import { applyBattleProgressToCapturedPokemon, getPokemonLevel } from '../utils/capturedPokemonProgress';
+import { getPlayerBattleXp } from '../utils/expRewards';
 
 interface CapturedPokemon extends Pokemon {
   rarity: number;
@@ -111,8 +112,13 @@ export function BattleFightPage() {
             // All Pokemon fainted - battle lost
             applyTeamBattleProgress(false);
             setTimeout(() => {
-              navigate('/game/battle', {
-                state: { battleResult: 'lost' }
+              navigate('/game/battle/result', {
+                state: {
+                  success: false,
+                  pokemon: enemy,
+                  mode,
+                  xpEarned: getPlayerBattleXp(mode, false),
+                }
               });
             }, 2000);
           }

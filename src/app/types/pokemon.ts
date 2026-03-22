@@ -68,4 +68,5 @@ export interface GameResult {
   totalQuestions: number;
   correctAnswers: string[];
   incorrectAnswers: string[];
+  bestStreak?: number;
 }

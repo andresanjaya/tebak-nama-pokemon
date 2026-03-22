@@ -6,6 +6,7 @@ import { Pokemon } from '../types/pokemon';
 import { calculatePokemonRarity } from '../services/pokeapi';
 import { PokedexHeader } from '../components/PokedexHeader';
 import { readCapturedPokemonFromStorage, withDefaultProgress } from '../utils/capturedPokemonProgress';
+import { getPlayerCaptureOutcomeXp } from '../utils/expRewards';
 
 export function CapturePage() {
   const navigate = useNavigate();
@@ -145,7 +146,7 @@ export function CapturePage() {
           pokemon,
           rarity,
           mode,
-          xpEarned: mode === 'boss' ? 250 : mode === 'event' ? 200 : 75,
+          xpEarned: getPlayerCaptureOutcomeXp(mode, true),
         }
       });
     } else {
@@ -154,7 +155,7 @@ export function CapturePage() {
           success: false,
           pokemon,
           mode,
-          xpEarned: 25,
+          xpEarned: getPlayerCaptureOutcomeXp(mode, false),
         }
       });
     }

@@ -111,6 +111,7 @@ export function GamePage() {
             totalQuestions,
             correctAnswers,
             incorrectAnswers: [...incorrectAnswers, question.correctPokemon.name],
+            bestStreak,
           },
         });
       } else {
@@ -153,6 +154,7 @@ export function GamePage() {
             incorrectAnswers: isCorrect
               ? incorrectAnswers
               : [...incorrectAnswers, question.correctPokemon.name],
+            bestStreak: isCorrect ? Math.max(bestStreak, streak + 1) : bestStreak,
           },
         });
       } else {

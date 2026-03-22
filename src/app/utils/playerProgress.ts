@@ -1,6 +1,16 @@
 export const getXpRequiredForNextLevel = (currentLevel: number): number => {
   const safeLevel = Math.max(1, currentLevel);
-  return 300 + (safeLevel - 1) * 150;
+
+  // Fast early game (1-5), smooth mid game (6-15), slightly grindy high levels (16+).
+  if (safeLevel <= 5) {
+    return 110 + (safeLevel - 1) * 25;
+  }
+
+  if (safeLevel <= 15) {
+    return 210 + (safeLevel - 6) * 40;
+  }
+
+  return 610 + (safeLevel - 16) * 55;
 };
 
 interface ApplyXpGainResult {

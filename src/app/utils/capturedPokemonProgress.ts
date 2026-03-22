@@ -1,6 +1,7 @@
 import { Pokemon } from '../types/pokemon';
 import { applyXpGain } from './playerProgress';
 import { getXpRequiredForNextLevel } from './playerProgress';
+import { getPokemonBattleXp } from './expRewards';
 
 export interface CapturedPokemonProgressFields {
   capturedId?: string;
@@ -100,15 +101,7 @@ export const withDefaultProgress = <T extends CapturedPokemonWithProgress>(pokem
 };
 
 const getBattlePokemonXpGain = (battleMode: string, didWin: boolean): number => {
-  if (didWin) {
-    if (battleMode === 'boss') return 95;
-    if (battleMode === 'event') return 72;
-    return 55;
-  }
-
-  if (battleMode === 'boss') return 30;
-  if (battleMode === 'event') return 24;
-  return 18;
+  return getPokemonBattleXp(battleMode, didWin);
 };
 
 const isSameCapturedPokemon = (
