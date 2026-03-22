@@ -73,6 +73,21 @@ export const createCapturedPokemonId = (): string => {
   return `cp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 };
 
+export const readCapturedPokemonFromStorage = <T extends object = CapturedPokemonWithProgress>(): T[] => {
+  const saved = localStorage.getItem('capturedPokemon');
+
+  if (!saved) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) ? (parsed as T[]) : [];
+  } catch {
+    return [];
+  }
+};
+
 export const withDefaultProgress = <T extends CapturedPokemonWithProgress>(pokemon: T): T => {
   return {
     ...pokemon,
@@ -116,8 +131,8 @@ export const applyBattleProgressToCapturedPokemon = (
   didWin: boolean,
   battleMode: string
 ): ApplyBattleProgressResult => {
-  const saved = localStorage.getItem('capturedPokemon');
-  if (!saved) {
+  const stored = readCapturedPokemonFromStorage<CapturedPokemonWithProgress>();
+  if (stored.length === 0) {
     return {
       levelUps: [],
       updatedCount: 0,
@@ -125,7 +140,7 @@ export const applyBattleProgressToCapturedPokemon = (
     };
   }
 
-  const captured = (JSON.parse(saved) as CapturedPokemonWithProgress[]).map(withDefaultProgress);
+  const captured = stored.map(withDefaultProgress);
   const xpGain = getBattlePokemonXpGain(battleMode, didWin);
 
   const updated = [...captured];

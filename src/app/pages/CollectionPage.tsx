@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Star, Trophy, Filter, Search, X, Check } from 'lucide-react';
 import { PokedexHeader } from '../components/PokedexHeader';
 import { Pokemon } from '../types/pokemon';
-import { getPokemonLevel, getPokemonXpProgress, withDefaultProgress } from '../utils/capturedPokemonProgress';
+import { getPokemonLevel, getPokemonXpProgress, readCapturedPokemonFromStorage, withDefaultProgress } from '../utils/capturedPokemonProgress';
 
 interface CapturedPokemon extends Pokemon {
   rarity: number;
@@ -39,12 +39,15 @@ export function CollectionPage() {
 
   useEffect(() => {
     // Load captured Pokemon from localStorage
-    const saved = localStorage.getItem('capturedPokemon');
-    if (saved) {
-      const captured = (JSON.parse(saved) as CapturedPokemon[]).map((pokemon) => withDefaultProgress(pokemon));
+    const savedCaptured = readCapturedPokemonFromStorage<CapturedPokemon>();
+    if (savedCaptured.length > 0) {
+      const captured = savedCaptured.map((pokemon) => withDefaultProgress(pokemon));
       localStorage.setItem('capturedPokemon', JSON.stringify(captured));
       setCollection(captured);
       setFilteredCollection(captured);
+    } else {
+      setCollection([]);
+      setFilteredCollection([]);
     }
   }, []);
 

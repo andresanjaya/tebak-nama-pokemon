@@ -6,7 +6,7 @@ import { Pokemon } from '../types/pokemon';
 import { applyXpGain } from '../utils/playerProgress';
 import { calculatePokemonRarity, fetchRandomPokemon } from '../services/pokeapi';
 import { PokedexHeader } from '../components/PokedexHeader';
-import { withDefaultProgress } from '../utils/capturedPokemonProgress';
+import { readCapturedPokemonFromStorage, withDefaultProgress } from '../utils/capturedPokemonProgress';
 
 export function BattleResultPage() {
   const navigate = useNavigate();
@@ -144,8 +144,7 @@ export function BattleResultPage() {
   }, []);
 
   const saveCapturedPokemon = (capturedPokemon: Pokemon, capturedMode: string) => {
-    const saved = localStorage.getItem('capturedPokemon');
-    const captured = saved ? JSON.parse(saved) : [];
+    const captured = readCapturedPokemonFromStorage();
 
     captured.push(withDefaultProgress({
       ...capturedPokemon,

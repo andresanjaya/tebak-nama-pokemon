@@ -7,7 +7,7 @@ import { fetchPokemonById, calculatePokemonRarity } from '../services/pokeapi';
 import { PokedexHeader } from '../components/PokedexHeader';
 import { TypeBadge } from '../components/TypeBadge';
 import { typeLightColors } from '../utils/typeColors';
-import { getPokemonLevel, getPokemonXpProgress, withDefaultProgress } from '../utils/capturedPokemonProgress';
+import { getPokemonLevel, getPokemonXpProgress, readCapturedPokemonFromStorage, withDefaultProgress } from '../utils/capturedPokemonProgress';
 
 interface CapturedPokemon extends Pokemon {
   rarity: number;
@@ -33,9 +33,9 @@ export function PokemonSelectionPage() {
   const [isRenting, setIsRenting] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('capturedPokemon');
-    if (saved) {
-      const captured = (JSON.parse(saved) as CapturedPokemon[]).map((pokemon) => withDefaultProgress(pokemon));
+    const savedCaptured = readCapturedPokemonFromStorage<CapturedPokemon>();
+    if (savedCaptured.length > 0) {
+      const captured = savedCaptured.map((pokemon) => withDefaultProgress(pokemon));
       localStorage.setItem('capturedPokemon', JSON.stringify(captured));
       setCollection(captured);
       
@@ -48,6 +48,9 @@ export function PokemonSelectionPage() {
         ];
         setSelectedSlots(autoSelect);
       }
+    } else {
+      setCollection([]);
+      setSelectedSlots([null, null, null]);
     }
   }, []);
 

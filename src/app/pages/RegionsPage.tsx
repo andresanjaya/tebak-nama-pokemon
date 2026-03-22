@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { Pokemon } from '../types/pokemon';
+import { readCapturedPokemonFromStorage } from '../utils/capturedPokemonProgress';
 
 interface CapturedPokemon extends Pokemon {
   rarity: number;
@@ -139,8 +140,7 @@ export function RegionsPage() {
 
   useEffect(() => {
     const updateCaughtCounts = () => {
-      const saved = localStorage.getItem('capturedPokemon');
-      const captured = saved ? (JSON.parse(saved) as CapturedPokemon[]) : [];
+      const captured = readCapturedPokemonFromStorage<CapturedPokemon>();
 
       // Use unique Pokemon IDs so duplicate captures don't inflate Pokedex progress.
       const uniqueIds = new Set(captured.map((p) => p.id));
