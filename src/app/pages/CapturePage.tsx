@@ -119,31 +119,32 @@ export function CapturePage() {
     
     const success = Math.random() < finalProbability;
     
-    setTimeout(() => {
-      setCaptureSuccess(success);
-      
+    setTimeout(async () => {
       if (success) {
-        // Save captured Pokemon
+        // Save captured Pokemon locally first
         const capturedPokemon = withDefaultProgress({
           ...pokemon,
           rarity,
           capturedAt: new Date().toISOString(),
           mode,
         });
-        
+
         const captured = readCapturedPokemonFromStorage();
         captured.push(capturedPokemon);
         localStorage.setItem('capturedPokemon', JSON.stringify(captured));
-        
+
         // Update capture count
         localStorage.setItem('capturedCount', captured.length.toString());
-        
-        // Sync to Supabase if logged in
+
+        // Ensure cloud sync is attempted before showing success UI.
+        // This reduces risk of data loss when user hard-refreshes immediately.
         if (user) {
-          syncCapturedPokemonToSupabase(user.id, capturedPokemon)
+          await syncCapturedPokemonToSupabase(user.id, capturedPokemon)
             .catch((e) => console.warn('Failed to sync pokemon to Supabase:', e));
         }
       }
+
+      setCaptureSuccess(success);
     }, 1500);
   };
 

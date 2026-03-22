@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, authService } from '../services/supabaseClient';
-import { syncAllDataFromSupabase } from '../utils/supabaseSync';
+import { clearUserScopedLocalData, syncAllDataFromSupabase } from '../utils/supabaseSync';
 
 interface User {
   id: string;
@@ -82,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     await authService.logout();
     setUser(null);
+    clearUserScopedLocalData();
   };
 
   return (

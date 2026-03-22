@@ -83,11 +83,23 @@ export const playerProgressService = {
 export const capturedPokemonService = {
   // Save or update captured pokemon
   async saveCapturedPokemon(userId: string, pokemonData: any) {
+    const capturedId = pokemonData.capturedId || pokemonData.captured_id;
+    const pokemonId = pokemonData.id || pokemonData.pokemon_id;
+
+    if (!capturedId || !pokemonId) {
+      throw new Error('Missing captured_id or pokemon_id for captured pokemon sync');
+    }
+
     const { data, error } = await supabase
       .from('captured_pokemon')
       .upsert({
         user_id: userId,
-        ...pokemonData,
+        captured_id: capturedId,
+        pokemon_id: pokemonId,
+        level: pokemonData.level ?? 1,
+        xp: pokemonData.xp ?? 0,
+        wins: pokemonData.wins ?? 0,
+        battles_used: pokemonData.battlesUsed ?? pokemonData.battles_used ?? 0,
         updated_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id,captured_id',

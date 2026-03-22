@@ -8,7 +8,7 @@ import { calculatePokemonRarity, fetchRandomPokemon } from '../services/pokeapi'
 import { PokedexHeader } from '../components/PokedexHeader';
 import { readCapturedPokemonFromStorage, withDefaultProgress } from '../utils/capturedPokemonProgress';
 import { useAuth } from '../contexts/AuthContext';
-import { syncPlayerProgressToSupabase } from '../utils/supabaseSync';
+import { syncCapturedPokemonToSupabase, syncPlayerProgressToSupabase } from '../utils/supabaseSync';
 
 export function BattleResultPage() {
   const navigate = useNavigate();
@@ -152,25 +152,32 @@ export function BattleResultPage() {
     }
   }, []);
 
-  const saveCapturedPokemon = (capturedPokemon: Pokemon, capturedMode: string) => {
+  const saveCapturedPokemon = async (capturedPokemon: Pokemon, capturedMode: string) => {
     const captured = readCapturedPokemonFromStorage();
 
-    captured.push(withDefaultProgress({
+    const normalizedCapturedPokemon = withDefaultProgress({
       ...capturedPokemon,
       rarity: calculatePokemonRarity(capturedPokemon),
       capturedAt: new Date().toISOString(),
       mode: capturedMode,
-    }));
+    });
+
+    captured.push(normalizedCapturedPokemon);
 
     localStorage.setItem('capturedPokemon', JSON.stringify(captured));
     localStorage.setItem('capturedCount', captured.length.toString());
+
+    if (user) {
+      await syncCapturedPokemonToSupabase(user.id, normalizedCapturedPokemon)
+        .catch((e) => console.warn('Failed to sync reward pokemon to Supabase:', e));
+    }
   };
 
-  const handleCaptureLevelReward = () => {
+  const handleCaptureLevelReward = async () => {
     const rewardPokemon = levelUpRewards[currentRewardIndex];
     if (!rewardPokemon) return;
 
-    saveCapturedPokemon(rewardPokemon, 'level-reward');
+    await saveCapturedPokemon(rewardPokemon, 'level-reward');
 
     if (currentRewardIndex >= levelUpRewards.length - 1) {
       setShowRewardModal(false);

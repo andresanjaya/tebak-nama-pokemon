@@ -1,5 +1,18 @@
 import { playerProgressService, capturedPokemonService } from '../services/supabaseClient';
-import { CapturedPokemonWithProgress } from '../utils/capturedPokemonProgress';
+import { CapturedPokemonWithProgress, withDefaultProgress } from '../utils/capturedPokemonProgress';
+import { fetchPokemonById } from '../services/pokeapi';
+import { Pokemon } from '../types/pokemon';
+
+const USER_SCOPED_LOCAL_KEYS = [
+  'playerLevel',
+  'playerXP',
+  'capturedPokemon',
+  'capturedCount',
+];
+
+export function clearUserScopedLocalData() {
+  USER_SCOPED_LOCAL_KEYS.forEach((key) => localStorage.removeItem(key));
+}
 
 /**
  * Sync semua player data dari localStorage ke Supabase
@@ -47,20 +60,69 @@ export async function syncAllDataToSupabase(userId: string) {
  */
 export async function syncAllDataFromSupabase(userId: string) {
   try {
+    // Always clear current user-scoped cache before loading next account data.
+    // This prevents cross-account leakage when switching users in the same browser.
+    clearUserScopedLocalData();
+
     // Load player progress
     const playerProgress = await playerProgressService.getPlayerProgress(userId);
     if (playerProgress) {
       localStorage.setItem('playerLevel', playerProgress.level.toString());
       localStorage.setItem('playerXP', playerProgress.xp.toString());
       console.log('✓ Player progress loaded');
+    } else {
+      localStorage.setItem('playerLevel', '1');
+      localStorage.setItem('playerXP', '0');
     }
 
     // Load captured pokemon
-    const capturedPokemon = await capturedPokemonService.getCapturedPokemon(userId);
-    if (capturedPokemon && capturedPokemon.length > 0) {
-      localStorage.setItem('capturedPokemon', JSON.stringify(capturedPokemon));
-      console.log(`✓ ${capturedPokemon.length} pokemon loaded`);
-    }
+    const capturedRows = await capturedPokemonService.getCapturedPokemon(userId);
+
+    const hydratedCapturedPokemon = await Promise.all(
+      (capturedRows || []).map(async (row: any) => {
+        let basePokemon: Pokemon;
+
+        try {
+          basePokemon = await fetchPokemonById(row.pokemon_id);
+        } catch {
+          // Fallback shape keeps collection usable even if PokeAPI fails temporarily.
+          basePokemon = {
+            id: row.pokemon_id,
+            name: `Pokemon #${row.pokemon_id}`,
+            genus: 'Unknown Pokemon',
+            types: ['normal'],
+            stats: {
+              hp: 50,
+              attack: 50,
+              defense: 50,
+              specialAttack: 50,
+              specialDefense: 50,
+              speed: 50,
+            },
+            abilities: [],
+            description: 'Pokemon data is temporarily unavailable.',
+            image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${row.pokemon_id}.png`,
+            weight: 0,
+            height: 0,
+            weaknesses: [],
+          };
+        }
+
+        return withDefaultProgress({
+          ...basePokemon,
+          capturedId: row.captured_id,
+          capturedAt: row.created_at || new Date().toISOString(),
+          level: row.level,
+          xp: row.xp,
+          wins: row.wins,
+          battlesUsed: row.battles_used,
+        } as CapturedPokemonWithProgress);
+      })
+    );
+
+    localStorage.setItem('capturedPokemon', JSON.stringify(hydratedCapturedPokemon));
+    localStorage.setItem('capturedCount', hydratedCapturedPokemon.length.toString());
+    console.log(`✓ ${hydratedCapturedPokemon.length} pokemon loaded`);
 
     return true;
   } catch (error) {
@@ -87,7 +149,9 @@ export async function syncCapturedPokemonToSupabase(
     const capturedPokemon: CapturedPokemonWithProgress[] = capturedPokemonStr
       ? JSON.parse(capturedPokemonStr)
       : [];
-    const index = capturedPokemon.findIndex((p) => p.id === pokemon.id);
+    const index = capturedPokemon.findIndex(
+      (p) => (p.capturedId && pokemon.capturedId && p.capturedId === pokemon.capturedId) || p.id === pokemon.id
+    );
     if (index >= 0) {
       capturedPokemon[index] = pokemon;
     } else {
