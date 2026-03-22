@@ -5,8 +5,12 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Eye, EyeOff } from 'lucide-react';
 
-const POKEMON_WALLPAPER_URL = '/pokemon-wallpaper.jpg';
-const POKEMON_LOGO_URL = '/International_Pokémon_logo.svg';
+const ASSET_BASE =
+  typeof window !== 'undefined' && window.location.hostname.endsWith('github.io')
+    ? '/pokemon-nexacatch/'
+    : '/';
+const POKEMON_WALLPAPER_URL = `${ASSET_BASE}pokemon-wallpaper.jpg`;
+const POKEMON_LOGO_URL = `${ASSET_BASE}pokemon-logo.svg`;
 
 export function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
