@@ -1,5 +1,5 @@
 import { playerProgressService, capturedPokemonService } from '../services/supabaseClient';
-import { CapturedPokemonProgress } from '../utils/capturedPokemonProgress';
+import { CapturedPokemonWithProgress } from '../utils/capturedPokemonProgress';
 
 /**
  * Sync semua player data dari localStorage ke Supabase
@@ -24,7 +24,7 @@ export async function syncAllDataToSupabase(userId: string) {
     const capturedPokemonStr = localStorage.getItem('capturedPokemon');
     if (capturedPokemonStr) {
       try {
-        const capturedPokemon: CapturedPokemonProgress[] = JSON.parse(capturedPokemonStr);
+        const capturedPokemon: CapturedPokemonWithProgress[] = JSON.parse(capturedPokemonStr);
         for (const pokemon of capturedPokemon) {
           await capturedPokemonService.saveCapturedPokemon(userId, pokemon);
         }
@@ -75,7 +75,7 @@ export async function syncAllDataFromSupabase(userId: string) {
  */
 export async function syncCapturedPokemonToSupabase(
   userId: string,
-  pokemon: CapturedPokemonProgress
+  pokemon: CapturedPokemonWithProgress
 ) {
   try {
     await capturedPokemonService.saveCapturedPokemon(userId, pokemon);
@@ -84,7 +84,7 @@ export async function syncCapturedPokemonToSupabase(
     console.error('Pokemon sync failed:', error);
     // Fallback: tetap simpan di localStorage
     const capturedPokemonStr = localStorage.getItem('capturedPokemon');
-    const capturedPokemon: CapturedPokemonProgress[] = capturedPokemonStr
+    const capturedPokemon: CapturedPokemonWithProgress[] = capturedPokemonStr
       ? JSON.parse(capturedPokemonStr)
       : [];
     const index = capturedPokemon.findIndex((p) => p.id === pokemon.id);

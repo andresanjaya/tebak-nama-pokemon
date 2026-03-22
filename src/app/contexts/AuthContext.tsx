@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, authService } from '../services/supabaseClient';
+import { syncAllDataFromSupabase } from '../utils/supabaseSync';
 
 interface User {
   id: string;
@@ -26,10 +27,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .getSession()
       .then((session) => {
         if (session?.user) {
-          setUser({
+          const userData: User = {
             id: session.user.id,
             email: session.user.email || '',
-          });
+          };
+          setUser(userData);
+          // Sync data from Supabase to localStorage
+          syncAllDataFromSupabase(session.user.id)
+            .catch((e) => console.warn('Initial sync failed, will use cached data:', e));
         }
       })
       .catch((error) => console.error('Auth check failed:', error))
@@ -39,10 +44,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (session?.user) {
-          setUser({
+          const userData: User = {
             id: session.user.id,
             email: session.user.email || '',
-          });
+          };
+          setUser(userData);
+          // Sync on auth state change
+          if (event === 'SIGNED_IN') {
+            syncAllDataFromSupabase(session.user.id)
+              .catch((e) => console.warn('Sync failed:', e));
+          }
         } else {
           setUser(null);
         }
@@ -56,10 +67,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     await authService.login(email, password);
+    // Sync data after login
+    const session = await authService.getSession();
+    if (session?.user) {
+      await syncAllDataFromSupabase(session.user.id);
+    }
   };
 
   const register = async (email: string, password: string) => {
     await authService.register(email, password);
+    // Don't force sync on register since data is new
   };
 
   const logout = async () => {

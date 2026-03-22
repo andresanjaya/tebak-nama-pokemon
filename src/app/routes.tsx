@@ -17,6 +17,8 @@ import { ResultPage } from './pages/ResultPage';
 import { FavoritesPage } from './pages/FavoritesPage';
 import { RegionsPage } from './pages/RegionsPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { LoginPage } from './pages/LoginPage';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { ReactElement } from 'react';
 
 // Layout wrapper component
@@ -33,64 +35,68 @@ function getRouterBasename() {
 
 export const router = createBrowserRouter([
   {
+    path: '/login',
+    element: <LoginPage />,
+  },
+  {
     path: '/',
-    element: <LayoutWrapper><PokedexPage /></LayoutWrapper>,
+    element: <ProtectedRoute><LayoutWrapper><PokedexPage /></LayoutWrapper></ProtectedRoute>,
   },
   {
     path: '/pokemon/:id',
-    element: <LayoutWrapper showHeader={false}><DetailPage /></LayoutWrapper>,
+    element: <ProtectedRoute><LayoutWrapper showHeader={false}><DetailPage /></LayoutWrapper></ProtectedRoute>,
   },
   {
     path: '/regions',
-    element: <LayoutWrapper><RegionsPage /></LayoutWrapper>,
+    element: <ProtectedRoute><LayoutWrapper><RegionsPage /></LayoutWrapper></ProtectedRoute>,
   },
   {
     path: '/favorites',
-    element: <LayoutWrapper><FavoritesPage /></LayoutWrapper>,
+    element: <ProtectedRoute><LayoutWrapper><FavoritesPage /></LayoutWrapper></ProtectedRoute>,
   },
   {
     path: '/game',
-    element: <LayoutWrapper showHeader={false}><GameMenuPage /></LayoutWrapper>,
+    element: <ProtectedRoute><LayoutWrapper showHeader={false}><GameMenuPage /></LayoutWrapper></ProtectedRoute>,
   },
   {
     path: '/game/guess',
-    element: <LayoutWrapper showHeader={false}><GamePage /></LayoutWrapper>,
+    element: <ProtectedRoute><LayoutWrapper showHeader={false}><GamePage /></LayoutWrapper></ProtectedRoute>,
   },
   {
     path: '/game/guess/results',
-    element: <LayoutWrapper showHeader={false}><ResultPage /></LayoutWrapper>,
+    element: <ProtectedRoute><LayoutWrapper showHeader={false}><ResultPage /></LayoutWrapper></ProtectedRoute>,
   },
   {
     path: '/game/battle',
-    element: <LayoutWrapper showHeader={false}><BattleModeSelectPage /></LayoutWrapper>,
+    element: <ProtectedRoute><LayoutWrapper showHeader={false}><BattleModeSelectPage /></LayoutWrapper></ProtectedRoute>,
   },
   {
     path: '/game/battle/select-pokemon',
-    element: <LayoutWrapper showHeader={false}><PokemonSelectionPage /></LayoutWrapper>,
+    element: <ProtectedRoute><LayoutWrapper showHeader={false}><PokemonSelectionPage /></LayoutWrapper></ProtectedRoute>,
   },
   {
     path: '/game/battle/encounter',
-    element: <LayoutWrapper showHeader={false}><EnemyEncounterPage /></LayoutWrapper>,
+    element: <ProtectedRoute><LayoutWrapper showHeader={false}><EnemyEncounterPage /></LayoutWrapper></ProtectedRoute>,
   },
   {
     path: '/game/battle/first-attack',
-    element: <LayoutWrapper showHeader={false}><FirstAttackChancePage /></LayoutWrapper>,
+    element: <ProtectedRoute><LayoutWrapper showHeader={false}><FirstAttackChancePage /></LayoutWrapper></ProtectedRoute>,
   },
   {
     path: '/game/battle/fight',
-    element: <LayoutWrapper showHeader={false}><BattleFightPage /></LayoutWrapper>,
+    element: <ProtectedRoute><LayoutWrapper showHeader={false}><BattleFightPage /></LayoutWrapper></ProtectedRoute>,
   },
   {
     path: '/game/battle/capture',
-    element: <LayoutWrapper showHeader={false}><CapturePage /></LayoutWrapper>,
+    element: <ProtectedRoute><LayoutWrapper showHeader={false}><CapturePage /></LayoutWrapper></ProtectedRoute>,
   },
   {
     path: '/game/battle/result',
-    element: <LayoutWrapper showHeader={false}><BattleResultPage /></LayoutWrapper>,
+    element: <ProtectedRoute><LayoutWrapper showHeader={false}><BattleResultPage /></LayoutWrapper></ProtectedRoute>,
   },
   {
     path: '/game/battle/collection',
-    element: <LayoutWrapper showHeader={false}><CollectionPage /></LayoutWrapper>,
+    element: <ProtectedRoute><LayoutWrapper showHeader={false}><CollectionPage /></LayoutWrapper></ProtectedRoute>,
   },
   {
     path: '*',

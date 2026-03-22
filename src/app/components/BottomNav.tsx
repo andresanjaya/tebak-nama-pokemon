@@ -1,10 +1,13 @@
-import { Gamepad2, Heart, Map } from 'lucide-react';
-import { Link, useLocation } from 'react-router';
+import { Gamepad2, Heart, Map, LogOut } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { PokeballIcon } from './PokeballIcon';
+import { useAuth } from '../contexts/AuthContext';
 
 export function BottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   
   const isActive = (path: string) => {
     if (path === '/') {
@@ -19,6 +22,11 @@ export function BottomNav() {
     { path: '/favorites', icon: Heart, label: 'Favorites' },
     { path: '/game', icon: Gamepad2, label: 'Games' },
   ];
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40">
@@ -77,6 +85,20 @@ export function BottomNav() {
               </Link>
             );
           })}
+
+          {/* Logout button */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={handleLogout}
+            className="flex flex-col items-center justify-center flex-1"
+          >
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-red-700/50 hover:bg-red-700/70 transition-all">
+              <LogOut className="w-5 h-5 text-white/70" />
+            </div>
+            <span className="text-[8px] font-bold tracking-wider text-white/60">
+              LOGOUT
+            </span>
+          </motion.button>
         </div>
       </div>
     </nav>

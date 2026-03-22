@@ -7,10 +7,13 @@ import { calculatePokemonRarity } from '../services/pokeapi';
 import { PokedexHeader } from '../components/PokedexHeader';
 import { readCapturedPokemonFromStorage, withDefaultProgress } from '../utils/capturedPokemonProgress';
 import { getPlayerCaptureOutcomeXp } from '../utils/expRewards';
+import { useAuth } from '../contexts/AuthContext';
+import { syncCapturedPokemonToSupabase } from '../utils/supabaseSync';
 
 export function CapturePage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   
   const [pokemon, setPokemon] = useState<Pokemon | null>(null);
   const [mode, setMode] = useState<string>('normal');
@@ -134,6 +137,12 @@ export function CapturePage() {
         
         // Update capture count
         localStorage.setItem('capturedCount', captured.length.toString());
+        
+        // Sync to Supabase if logged in
+        if (user) {
+          syncCapturedPokemonToSupabase(user.id, capturedPokemon)
+            .catch((e) => console.warn('Failed to sync pokemon to Supabase:', e));
+        }
       }
     }, 1500);
   };

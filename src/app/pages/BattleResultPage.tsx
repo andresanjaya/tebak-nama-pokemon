@@ -7,10 +7,13 @@ import { applyXpGain } from '../utils/playerProgress';
 import { calculatePokemonRarity, fetchRandomPokemon } from '../services/pokeapi';
 import { PokedexHeader } from '../components/PokedexHeader';
 import { readCapturedPokemonFromStorage, withDefaultProgress } from '../utils/capturedPokemonProgress';
+import { useAuth } from '../contexts/AuthContext';
+import { syncPlayerProgressToSupabase } from '../utils/supabaseSync';
 
 export function BattleResultPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [levelUps, setLevelUps] = useState(0);
   const [levelUpRewards, setLevelUpRewards] = useState<Pokemon[]>([]);
@@ -92,6 +95,12 @@ export function BattleResultPage() {
       localStorage.setItem('playerLevel', newLevel.toString());
       localStorage.setItem('playerXP', newXp.toString());
       setLevelUps(gainedLevels);
+
+      // Sync to Supabase if logged in
+      if (user) {
+        syncPlayerProgressToSupabase(user.id, newLevel, newXp)
+          .catch((e) => console.warn('Failed to sync progress to Supabase:', e));
+      }
 
       if (gainedLevels <= 0 || cancelled) {
         return;
