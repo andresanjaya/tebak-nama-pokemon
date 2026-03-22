@@ -10,8 +10,15 @@ import {
   fetchPokemonBattleMoves,
   getTypeEffectivenessMultiplier,
 } from '../services/pokeapi';
-import { applyBattleProgressToCapturedPokemon, getPokemonLevel } from '../utils/capturedPokemonProgress';
+import {
+  applyBattleProgressToCapturedPokemon,
+  getPokemonLevel,
+  readCapturedPokemonFromStorage,
+  withDefaultProgress,
+} from '../utils/capturedPokemonProgress';
 import { getPlayerBattleXp } from '../utils/expRewards';
+import { useAuth } from '../contexts/AuthContext';
+import { syncCapturedPokemonToSupabase } from '../utils/supabaseSync';
 
 interface CapturedPokemon extends Pokemon {
   rarity: number;
@@ -34,6 +41,7 @@ const getEnemyHpMultiplier = (battleMode?: string): number => {
 export function BattleFightPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   const [team, setTeam] = useState<CapturedPokemon[] | null>(null);
   const [enemy, setEnemy] = useState<Pokemon | null>(null);
@@ -58,7 +66,7 @@ export function BattleFightPage() {
   const [showRunAwayMessage, setShowRunAwayMessage] = useState(false);
   const battleProgressAppliedRef = useRef(false);
 
-  const applyTeamBattleProgress = useCallback((didWin: boolean) => {
+  const applyTeamBattleProgress = useCallback(async (didWin: boolean) => {
     if (!team || battleProgressAppliedRef.current) {
       return;
     }
@@ -66,13 +74,22 @@ export function BattleFightPage() {
     battleProgressAppliedRef.current = true;
     const progressResult = applyBattleProgressToCapturedPokemon(team, didWin, mode);
 
+    // Persist updated captured pokemon stats (xp/wins/battles_used) to Supabase.
+    // Without this, hard refresh can reset to stale DB values.
+    if (user) {
+      const updatedCaptured = readCapturedPokemonFromStorage<CapturedPokemon>();
+      for (const pokemon of updatedCaptured) {
+        await syncCapturedPokemonToSupabase(user.id, withDefaultProgress(pokemon as any));
+      }
+    }
+
     // Only show level-up popup after completed victory flow.
     if (didWin && progressResult.levelUps.length > 0) {
       sessionStorage.setItem('battlePokemonLevelUps', JSON.stringify(progressResult.levelUps));
     } else {
       sessionStorage.removeItem('battlePokemonLevelUps');
     }
-  }, [team, mode]);
+  }, [team, mode, user]);
 
   // Define all functions BEFORE any useEffect that uses them
   const dealDamage = useCallback((target: 'player' | 'enemy', amount: number, type: string) => {
@@ -85,12 +102,14 @@ export function BattleFightPage() {
       setEnemyHP(prev => {
         const newHP = Math.max(0, prev - amount);
         if (newHP <= 0) {
-          // Battle won!
-          applyTeamBattleProgress(true);
           setTimeout(() => {
-            navigate('/game/battle/capture', {
-              state: { pokemon: enemy, mode }
-            });
+            (async () => {
+              // Ensure battle progress reaches cloud before next flow.
+              await applyTeamBattleProgress(true);
+              navigate('/game/battle/capture', {
+                state: { pokemon: enemy, mode }
+              });
+            })();
           }, 2000);
         }
         return newHP;
@@ -109,17 +128,19 @@ export function BattleFightPage() {
               setBattlePhase('player-turn');
             }, 2000);
           } else {
-            // All Pokemon fainted - battle lost
-            applyTeamBattleProgress(false);
             setTimeout(() => {
-              navigate('/game/battle/result', {
-                state: {
-                  success: false,
-                  pokemon: enemy,
-                  mode,
-                  xpEarned: getPlayerBattleXp(mode, false),
-                }
-              });
+              (async () => {
+                // Ensure battle progress reaches cloud before result page.
+                await applyTeamBattleProgress(false);
+                navigate('/game/battle/result', {
+                  state: {
+                    success: false,
+                    pokemon: enemy,
+                    mode,
+                    xpEarned: getPlayerBattleXp(mode, false),
+                  }
+                });
+              })();
             }, 2000);
           }
         }
